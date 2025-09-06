@@ -4,116 +4,86 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
-{
-    /**
-     * Show list of tickets (for IT Personnel only)
-     */
-    public function index()
-    {
-        $tickets = [];
-
-        if (Auth::check()) {
-            $tickets = Ticket::with('itPersonnel')->latest()->get();
-        }
-
-        return view('tickets.index', compact('tickets'));
-    }
-
-    /**
-     * Show ticket submission form (homepage)
-     */
+{   
+    // Show ticket creation form
     public function create()
     {
-        // No need to pass agents/teamLeaders/components anymore
-        return view('tickets.create');
+        $pendingTickets    = Ticket::where('status', 'pending')->latest()->get();
+        $inProgressTickets = Ticket::where('status', 'in_progress')->latest('updated_at')->get();
+        $resolvedTickets   = Ticket::where('status', 'resolved')->latest('updated_at')->get();
+
+        return view('tickets.create', compact(
+            'pendingTickets',
+            'inProgressTickets',
+            'resolvedTickets'
+        ));
     }
 
-    /**
-     * Store new ticket
-     */
-public function store(Request $request)
-{
-    // ✅ Validate inputs
-    $validated = $request->validate([
-        'ticket_number' => 'required|string|max:50|unique:tickets,ticket_number',
-        'agent_name' => 'required|string|max:255',
-        'agent_email' => 'required|email|max:255',
-        'team_leader_name' => 'required|string|max:255',
-        'component' => 'required|string|max:255',
-        'issue_description' => 'required|string',
-    ]);
-
-    try {
-        // ✅ Create ticket (agent enters ticket number directly)
-        $ticket = Ticket::create([
-            'ticket_number' => $validated['ticket_number'], // 🔹 User entered
-            'agent_name' => $validated['agent_name'],
-            'agent_email' => $validated['agent_email'],
-            'team_leader_name' => $validated['team_leader_name'],
-            'component' => $validated['component'],
-            'issue_description' => $validated['issue_description'],
-            'status' => 'Pending', // default status
-        ]);
-
-        return redirect()->back()->with('success', 'Ticket submitted successfully. Ticket Number: ' . $ticket->ticket_number);
-
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'Failed to submit ticket: ' . $e->getMessage());
-    }
-}
-
-    /**
-     * Show a single ticket (IT Personnel only)
-     */
-    public function show(Ticket $ticket)
-    {
-        return view('tickets.show', compact('ticket'));
-    }
-
-    /**
-     * Update a ticket (status / assigned IT Personnel)
-     */
-    public function update(Request $request, Ticket $ticket)
+    // Store new ticket
+    public function store(Request $request)
     {
         $request->validate([
-            'status' => 'required|string',
+            'ticket_number'     => 'required|string|max:50|unique:tickets,ticket_number',
+            'agent_name'        => 'required|string|max:255',
+            'agent_email'       => 'required|email|max:255',
+            'team_leader_name'  => 'required|string|max:255',
+            'component'         => 'required|string|max:255',
+            'issue_description' => 'required|string',
+            'it_personnel_name' => 'nullable|string|max:255',
         ]);
+
+        Ticket::create($request->only([
+            'ticket_number',
+            'agent_name',
+            'agent_email',
+            'team_leader_name',
+            'component',
+            'issue_description',
+            'it_personnel_name',
+        ]));
+
+        return redirect()->route('tickets.create')->with('success', 'Ticket submitted successfully.');
+    }
+
+    // Show dashboard
+    public function index(Request $request) 
+    {
+        $status = $request->get('status');
+
+        $query = Ticket::query();
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $tickets = $query->latest()->get();
+
+        return view('dashboard', [
+            'tickets'          => $tickets,
+            'pendingCount'     => Ticket::where('status', 'pending')->count(),
+            'inProgressCount'  => Ticket::where('status', 'in_progress')->count(),
+            'resolvedCount'    => Ticket::where('status', 'resolved')->count(),
+        ]);
+    }
+
+    // Update ticket (status or IT personnel assignment)
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'status'             => 'required|string',
+            'it_personnel_name'  => 'nullable|string|max:255',
+        ]);
+
+        $ticket = Ticket::findOrFail($id);
 
         $ticket->update([
-            'status' => $request->status,
-            'it_personnel_id' => Auth::id(),
+            'status'            => $request->status,
+            'it_personnel_name' => $request->it_personnel_name,
         ]);
 
-        return redirect()->route('tickets.index')->with('success', 'Ticket updated successfully!');
-    }
-
-
-       public function dashboard()
-    {
-        $tickets = Ticket::where('status', 'pending')->latest()->get();
-        return view('dashboard', compact('tickets'));
-    }
-
-    public function updateStatus($id)
-{
-    $ticket = Ticket::findOrFail($id);
-    $ticket->status = 'resolved';
-    $ticket->save();
-
-    return redirect()->route('dashboard')->with('success', 'Ticket marked as resolved ✅');
-}
-
-
-    /**
-     * Delete a ticket (IT Personnel only)
-     */
-    public function destroy(Ticket $ticket)
-    {
-        $ticket->delete();
-
-        return redirect()->route('tickets.index')->with('success', 'Ticket deleted successfully!');
+        return redirect()->route('dashboard', ['status' => $request->status])
+                         ->with('success', 'Ticket updated successfully!');
     }
 }

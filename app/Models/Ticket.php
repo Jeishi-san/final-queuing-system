@@ -12,16 +12,11 @@ class Ticket extends Model
     protected $fillable = [
         'ticket_number',
         'agent_name',
+        'agent_email',
         'team_leader_name',
         'component',
         'issue_description',
         'status',
-        'it_personnel_id',
+        'it_personnel_name',
     ];
-
-    // Relationship with IT Personnel (User)
-    public function itPersonnel()
-    {
-        return $this->belongsTo(User::class, 'it_personnel_id');
-    }
 }
