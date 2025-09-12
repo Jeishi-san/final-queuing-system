@@ -6,15 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        Schema::create('queue_logs', function (Blueprint $table) {
+        Schema::create('components', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ticket_id')->nullable()->constrained('tickets')->nullOnDelete();
-            $table->string('action'); // e.g., "Queued", "Assigned", "Escalated"
+            $table->string('name');
             $table->timestamps();
         });
     }
 
     public function down(): void {
-        Schema::dropIfExists('queue_logs');
+        Schema::dropIfExists('components');
     }
 };

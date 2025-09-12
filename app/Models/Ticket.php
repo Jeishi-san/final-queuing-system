@@ -2,21 +2,32 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Ticket extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'ticket_number',
-        'agent_name',
-        'agent_email',
-        'team_leader_name',
-        'component',
+        'agent_id',
+        'team_leader_id',
+        'component_id',
         'issue_description',
         'status',
         'it_personnel_name',
     ];
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function teamLeader()
+    {
+        return $this->belongsTo(TeamLeader::class);
+    }
+
+    public function component()
+    {
+        return $this->belongsTo(Component::class);
+    }
 }

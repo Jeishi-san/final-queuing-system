@@ -3,87 +3,112 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use App\Models\Agent;
+use App\Models\TeamLeader;
+use App\Models\Component;
 use Illuminate\Http\Request;
 
 class TicketController extends Controller
-{   
-    // Show ticket creation form
+{
+    /**
+     * Show the ticket creation form.
+     */
     public function create()
     {
-        $pendingTickets    = Ticket::where('status', 'pending')->latest()->get();
-        $inProgressTickets = Ticket::where('status', 'in_progress')->latest('updated_at')->get();
-        $resolvedTickets   = Ticket::where('status', 'resolved')->latest('updated_at')->get();
+        return view('tickets.create', [
+            'pendingTickets'    => Ticket::where('status', 'pending')->latest()->get(),
+            'inProgressTickets' => Ticket::where('status', 'in_progress')->latest('updated_at')->get(),
+            'resolvedTickets'   => Ticket::where('status', 'resolved')->latest('updated_at')->get(),
+            'agent'             => Agent::first(),
+            'teamLeader'        => TeamLeader::first(),
+            'component'         => Component::first(),
+        ]);
+    }   
 
-        return view('tickets.create', compact(
-            'pendingTickets',
-            'inProgressTickets',
-            'resolvedTickets'
-        ));
-    }
-
-    // Store new ticket
+    /**
+     * Store a newly created ticket.
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'ticket_number'     => 'required|string|max:50|unique:tickets,ticket_number',
-            'agent_name'        => 'required|string|max:255',
-            'agent_email'       => 'required|email|max:255',
-            'team_leader_name'  => 'required|string|max:255',
-            'component'         => 'required|string|max:255',
-            'issue_description' => 'required|string',
-            'it_personnel_name' => 'nullable|string|max:255',
+        $validated = $request->validate([
+            'ticket_number'      => 'required|string|max:255|unique:tickets,ticket_number',
+            'agent_name'         => 'required|string|max:255',
+            'agent_email'        => 'required|email|max:255',
+            'team_leader_name'   => 'required|string|max:255',
+            'team_leader_email'  => 'required|email|max:255',
+            'component_name'     => 'required|string|max:255',
+            'issue_description'  => 'required|string',
         ]);
 
-        Ticket::create($request->only([
-            'ticket_number',
-            'agent_name',
-            'agent_email',
-            'team_leader_name',
-            'component',
-            'issue_description',
-            'it_personnel_name',
-        ]));
+        // 🔹 Ensure Agent exists or create
+        $agent = Agent::firstOrCreate(
+            ['email' => $validated['agent_email']],
+            ['name' => $validated['agent_name']]
+        );
 
-        return redirect()->route('tickets.create')->with('success', 'Ticket submitted successfully.');
+        // 🔹 Ensure Team Leader exists or create
+        $teamLeader = TeamLeader::firstOrCreate(
+            ['email' => $validated['team_leader_email']],
+            ['name'  => $validated['team_leader_name']]
+        );
+
+        // 🔹 Ensure Component exists or create
+        $component = Component::firstOrCreate(
+            ['name' => $validated['component_name']]
+        );
+
+        // 🔹 Create the Ticket
+        Ticket::create([
+            'ticket_number'     => $validated['ticket_number'],
+            'agent_id'          => $agent->id,
+            'team_leader_id'    => $teamLeader->id,
+            'component_id'      => $component->id,
+            'issue_description' => $validated['issue_description'],
+            'status'            => 'pending',
+        ]);
+
+        return redirect()
+            ->route('tickets.create')
+            ->with('success', 'Ticket created successfully!');
     }
 
-    // Show dashboard
-    public function index(Request $request) 
+    /**
+     * Show the ticket dashboard.
+     */
+    public function index(Request $request)
     {
-        $status = $request->get('status');
+        $status = $request->query('status');
 
-        $query = Ticket::query();
+        $query = Ticket::with(['agent', 'teamLeader', 'component']);
 
         if ($status) {
             $query->where('status', $status);
         }
 
-        $tickets = $query->latest()->get();
-
         return view('dashboard', [
-            'tickets'          => $tickets,
-            'pendingCount'     => Ticket::where('status', 'pending')->count(),
-            'inProgressCount'  => Ticket::where('status', 'in_progress')->count(),
-            'resolvedCount'    => Ticket::where('status', 'resolved')->count(),
+            'tickets'         => $query->latest()->get(),
+            'pendingCount'    => Ticket::where('status', 'pending')->count(),
+            'inProgressCount' => Ticket::where('status', 'in_progress')->count(),
+            'resolvedCount'   => Ticket::where('status', 'resolved')->count(),
         ]);
     }
 
-    // Update ticket (status or IT personnel assignment)
+    /**
+     * Update a ticket status or assign IT personnel.
+     */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'status'             => 'required|string',
-            'it_personnel_name'  => 'nullable|string|max:255',
+        $validated = $request->validate([
+            'status'            => 'required|string|in:pending,in_progress,resolved',
+            'it_personnel_name' => 'nullable|string|max:255',
         ]);
 
         $ticket = Ticket::findOrFail($id);
 
-        $ticket->update([
-            'status'            => $request->status,
-            'it_personnel_name' => $request->it_personnel_name,
-        ]);
+        $ticket->update($validated);
 
-        return redirect()->route('dashboard', ['status' => $request->status])
-                         ->with('success', 'Ticket updated successfully!');
+        return redirect()
+            ->route('dashboard', ['status' => $validated['status']])
+            ->with('success', 'Ticket updated successfully!');
     }
 }

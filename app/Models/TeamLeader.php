@@ -4,17 +4,35 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class TeamLeader extends Model {
-    protected $fillable = ['name','production_id'];
+class TeamLeader extends Model
+{
+    protected $fillable = [
+        'name',
+        'email',          // ✅ added so you can mass assign email
+        'production_id',
+    ];
 
-    public function production() {
+    /**
+     * A team leader belongs to a production.
+     */
+    public function production()
+    {
         return $this->belongsTo(Production::class);
     }
-    public function agents() {
+
+    /**
+     * A team leader can manage many agents.
+     */
+    public function agents()
+    {
         return $this->hasMany(Agent::class);
     }
-    public function tickets() {
+
+    /**
+     * A team leader can be linked to many tickets.
+     */
+    public function tickets()
+    {
         return $this->hasMany(Ticket::class);
     }
 }
-
