@@ -9,7 +9,11 @@
     <!-- Right side -->
     <div class="flex space-x-4 items-center">
         @auth
-            <span class="text-sm">Hi, {{ Auth::user()->name }}</span>
+    {{-- ✅ User name routes to profile --}}
+            <a href="{{ route('profile.edit') }}" class="hover:underline text-sm">
+                {{ Auth::user()->name }}
+            </a>
+                
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="hover:underline">Logout</button>

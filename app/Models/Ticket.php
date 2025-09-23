@@ -6,28 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Ticket extends Model
 {
-    protected $fillable = [
-        'ticket_number',
-        'agent_id',
-        'team_leader_id',
-        'component_id',
-        'issue_description',
-        'status',
-        'it_personnel_name',
-    ];
-
-    public function agent()
-    {
-        return $this->belongsTo(Agent::class);
-    }
-
-    public function teamLeader()
-    {
-        return $this->belongsTo(TeamLeader::class);
-    }
-
-    public function component()
-    {
-        return $this->belongsTo(Component::class);
-    }
+   protected $fillable = [
+    'ticket_number',
+    'agent_name',
+    'agent_email',
+    'team_leader_name',
+    'team_leader_email',
+    'component_name',
+    'issue_description',
+    'status',
+    'it_personnel_name',
+];
 }
+
+

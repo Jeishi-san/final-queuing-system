@@ -6,20 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        Schema::create('tickets', function (Blueprint $table) {
-            $table->id();
-            $table->string('ticket_number')->unique();
-            $table->text('issue_description');
-            $table->enum('status', ['pending', 'in_progress', 'resolved'])->default('pending');
+       Schema::create('tickets', function (Blueprint $table) {
+    $table->id();
+    $table->string('ticket_number')->unique();
+    $table->text('issue_description');
+    $table->enum('status', ['pending', 'in_progress', 'resolved'])->default('pending');
 
-            // 🔹 Foreign keys (all nullable, safe deletes)
-            $table->foreignId('agent_id')->nullable()->constrained('agents')->nullOnDelete();
-            $table->foreignId('team_leader_id')->nullable()->constrained('team_leaders')->nullOnDelete();
-            $table->foreignId('component_id')->nullable()->constrained('components')->nullOnDelete();
-            $table->foreignId('it_personnel_id')->nullable()->constrained()->nullOnDelete();
+    // Plain text names + emails
+    $table->string('agent_name')->nullable();
+    $table->string('agent_email')->nullable();
+    $table->string('team_leader_name')->nullable();
+    $table->string('team_leader_email')->nullable();
 
-            $table->timestamps();
-        });
+    $table->string('component_name')->nullable();
+    $table->string('it_personnel_name')->nullable();
+
+    $table->timestamps();
+});
     }
 
     public function down(): void {
