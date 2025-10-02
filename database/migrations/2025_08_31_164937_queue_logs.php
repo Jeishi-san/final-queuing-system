@@ -8,8 +8,15 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('queue_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ticket_id')->nullable()->constrained('tickets')->nullOnDelete();
-            $table->string('action'); // e.g., "Queued", "Assigned", "Escalated"
+
+            $table->foreignId('ticket_id')
+                  ->constrained('tickets')
+                  ->cascadeOnDelete();
+
+            $table->integer('queue_position')->nullable();
+            $table->enum('status', ['waiting', 'in_queue', 'completed'])->default('waiting');
+            $table->timestamp('logged_at')->useCurrent();
+
             $table->timestamps();
         });
     }

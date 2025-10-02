@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -21,6 +19,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        // 'role', // Uncomment if you use a role column to separate IT staff from others
     ];
 
     /**
@@ -34,15 +33,54 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
+    }
+
+    /* ============================================================
+     |  Relationships
+     |============================================================
+     */
+
+    /**
+     * All activity logs performed by this user.
+     */
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    /**
+     * Tickets that were assigned to this user (IT personnel).
+     */
+    public function assignedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'it_personnel_id');
+    }
+
+    /* ============================================================
+     |  Helper / Convenience Methods
+     |============================================================
+     */
+
+    /**
+     * Check if this user is an IT personnel.
+     * Useful if you distinguish staff by a 'role' column in users table.
+     */
+    public function isITPersonnel(): bool
+    {
+        // If you store a role:
+        // return $this->role === 'it';
+
+        // If you only use this user as IT staff when they have assigned tickets:
+        return $this->assignedTickets()->exists();
     }
 }

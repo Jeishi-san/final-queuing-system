@@ -9,8 +9,8 @@
     <!-- Right side -->
     <div class="flex space-x-4 items-center">
         @auth
-    {{-- ✅ User name routes to profile --}}
-            <a href="{{ route('profile.edit') }}" class="hover:underline text-sm">
+            {{-- ✅ User name now links to named route "profile" --}}
+            <a href="{{ route('profile') }}" class="hover:underline text-sm">
                 {{ Auth::user()->name }}
             </a>
                 

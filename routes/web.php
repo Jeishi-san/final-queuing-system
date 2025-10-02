@@ -6,45 +6,61 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes (Agents - No Login Required)
+| Public Routes (Agents – No Login Required)
 |--------------------------------------------------------------------------
+|
+| Agents or walk-in users submit tickets without login.
+| They may also see live stats panels if you expose them.
+|
 */
 
-// Landing Page -> Ticket create form (unauthenticated agents)
-Route::get('/', [TicketController::class, 'create'])->name('tickets.create');
+// Landing page → Ticket submission form
+Route::get('/', [TicketController::class, 'create'])
+    ->name('tickets.create');
 
-// Store new ticket
-Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
+// Submit a new ticket
+Route::post('/tickets', [TicketController::class, 'store'])
+    ->name('tickets.store');
 
-// Live stats (for agents and dashboard) - JSON response
-Route::get('/tickets/panelstats', [TicketController::class, 'statsPartial'])->name('tickets.panels');
+// Optional: live stats / ticket list panel for AJAX
+Route::get('/tickets/panels', [TicketController::class, 'panels'])
+    ->name('tickets.panels');
+
+
 
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes (IT Personnel Only)
 |--------------------------------------------------------------------------
+|
+| IT Personnel must log in to see dashboard, assign/update tickets,
+| and view their own profile & activity logs.
+|
 */
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Dashboard for IT Personnel
-    Route::get('/dashboard', [TicketController::class, 'index'])->name('dashboard');
 
-    // Ticket updates (AJAX)
-    Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
+    /** 📊 Dashboard for IT Personnel */
+    Route::get('/dashboard', [TicketController::class, 'index'])
+        ->name('dashboard');
 
-    // Floating panel modal routes (only IT should access)
-    Route::get('/tickets/{ticket}/status', [TicketController::class, 'modalStatus']);
-    Route::get('/tickets/{ticket}/assign', [TicketController::class, 'modalAssign']);
-    Route::get('/tickets/{ticket}/view', [TicketController::class, 'modalView']);
+    /** 🔄 Update ticket (status / IT personnel assignment) */
+    Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])
+        ->name('tickets.update');
 
-    // Profile management
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    /** 🪟 Modal for assigning IT personnel (loaded by AJAX) */
+    Route::get('/tickets/{ticket}/assign', [TicketController::class, 'modalAssign'])
+        ->name('tickets.assign');
+
+    /** 👤 Profile page for logged-in IT Personnel */
+    Route::get('/profile', [ProfileController::class, 'profile'])
+        ->name('profile');
 });
+
+
 
 /*
 |--------------------------------------------------------------------------
-| Auth Scaffolding (Laravel Breeze/Fortify)
+| Authentication Scaffolding (e.g. Breeze / Fortify)
 |--------------------------------------------------------------------------
 */
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

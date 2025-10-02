@@ -10,6 +10,13 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+
+            // Each team leader belongs to a production (can be NULL)
+            $table->foreignId('production_id')
+                  ->nullable()
+                  ->constrained('productions')
+                  ->nullOnDelete();
+
             $table->timestamps();
         });
     }
