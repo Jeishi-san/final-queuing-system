@@ -6,8 +6,8 @@ use App\Models\Ticket;
 use App\Models\Agent;
 use App\Models\TeamLeader;
 use App\Models\Component;
-use App\Models\User;
 use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -15,13 +15,12 @@ use Illuminate\Support\Facades\Validator;
 class TicketController extends Controller
 {
     /**
-     * 📊 Dashboard for IT personnel
+     * 📊 IT Dashboard
      */
     public function index(Request $request)
     {
-        $query = Ticket::with(['agent','teamLeader','itPersonnel']);
+        $query = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component']);
 
-        // 🔎 Search
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('ticket_number', 'like', "%{$request->search}%")
@@ -29,38 +28,34 @@ class TicketController extends Controller
             });
         }
 
-        // 🔎 Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $tickets = $query->orderByDesc('created_at')->paginate(10);
+        $tickets = $query->latest()->paginate(10);
+        $stats   = $this->getStats();
 
-        return view('dashboard', [
-            'tickets' => $tickets,
-            'stats'   => $this->getStats(),
-        ]);
+        return view('dashboard', compact('tickets', 'stats'));
     }
 
     /**
-     * 📝 Public ticket submission form
+     * 📝 Public ticket submission page
      */
     public function create()
     {
         $stats   = $this->getStats();
-        $tickets = Ticket::with(['agent','teamLeader','itPersonnel'])
-                          ->latest()
-                          ->paginate(10);
+        $tickets = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component'])
+            ->latest()
+            ->paginate(10);
 
-        return view('tickets.create', compact('stats','tickets'));
+        return view('tickets.create', compact('stats', 'tickets'));
     }
 
     /**
-     * 💾 Store new ticket
+     * 💾 Store a new ticket
      */
     public function store(Request $request)
     {
-        // ✅ Validate input
         $validator = Validator::make($request->all(), [
             'ticket_number'     => 'nullable|string|max:50|unique:tickets,ticket_number',
             'issue_description' => 'required|string',
@@ -78,68 +73,50 @@ class TicketController extends Controller
         }
 
         $validated = $validator->validated();
+        $ticketNo  = $validated['ticket_number'] ?? 'T-' . time();
 
-        // ✅ Use provided ticket number or auto-generate
-        $ticketNumber = $request->filled('ticket_number')
-            ? $request->ticket_number
-            : 'T-' . time();
+        $agentId     = $this->resolveAgent($request);
+        $leaderId    = $this->resolveTeamLeader($request);
+        $componentId = $this->resolveComponent($request);
 
-        // ✅ Resolve related entities
-        $agentId  = $this->resolveAgent($request);
-        $leaderId = $this->resolveTeamLeader($request);
-
-        // ✅ Create ticket
         $ticket = Ticket::create([
-            'ticket_number'     => $ticketNumber,
+            'ticket_number'     => $ticketNo,
             'issue_description' => $validated['issue_description'],
             'status'            => 'pending',
             'agent_id'          => $agentId,
             'team_leader_id'    => $leaderId,
             'it_personnel_id'   => null,
+            'component_id'      => $componentId,
         ]);
 
-        // ✅ Attach component
-        if ($request->filled('component_name')) {
-            $component = Component::firstOrCreate(['name' => $request->component_name]);
-            $ticket->components()->attach($component->id, ['quantity' => 1]);
-        }
-
-        // ✅ Log activity (null user_id for guest)
         ActivityLog::create([
-            'user_id'      => Auth::check() ? Auth::id() : null,   // 👈 prevents null FK error
+            'user_id'      => Auth::id(),
             'ticket_id'    => $ticket->id,
-            'action'       => Auth::check()
-                                 ? 'Created ticket'
-                                 : 'Ticket submitted by agent',
+            'action'       => Auth::check() ? 'Created ticket' : 'Ticket submitted by agent',
             'performed_at' => now(),
         ]);
 
-        // ✅ Response
-        if ($request->expectsJson()) {
-            return response()->json([
+        return $request->expectsJson()
+            ? response()->json([
                 'success' => true,
-                'message' => 'Ticket created successfully!',
-                'ticket'  => $ticket->load(['agent','teamLeader','itPersonnel','components']),
+                'message' => 'Ticket submitted successfully!',
                 'stats'   => $this->getStats(),
-            ]);
-        }
-
-        return redirect()->route('tickets.create')
-                         ->with('success', 'Ticket submitted successfully!');
+            ])
+            : redirect()->route('tickets.create')->with('success', 'Ticket submitted successfully!');
     }
 
     /**
-     * 🔄 Update ticket
+     * 🔄 Update ticket (assignment & status)
      */
     public function update(Request $request, Ticket $ticket)
     {
         $validator = Validator::make($request->all(), [
             'status'            => 'nullable|in:pending,in_progress,resolved',
             'it_personnel_id'   => 'nullable|exists:users,id',
-            'agent_email'       => 'nullable|email|max:255',
             'agent_name'        => 'nullable|string|max:255',
-            'team_leader_email' => 'nullable|email|max:255',
+            'agent_email'       => 'nullable|email|max:255',
             'team_leader_name'  => 'nullable|string|max:255',
+            'team_leader_email' => 'nullable|email|max:255',
             'component_name'    => 'nullable|string|max:255',
         ]);
 
@@ -149,9 +126,6 @@ class TicketController extends Controller
                 : back()->withErrors($validator)->withInput();
         }
 
-        $validated = $validator->validated();
-
-        // ✅ Update related entities
         if ($request->filled('agent_email')) {
             $ticket->agent_id = $this->resolveAgent($request);
         }
@@ -160,87 +134,74 @@ class TicketController extends Controller
             $ticket->team_leader_id = $this->resolveTeamLeader($request);
         }
 
-        // ✅ Attach/update component
         if ($request->filled('component_name')) {
-            $component = Component::firstOrCreate(['name' => $request->component_name]);
-            $ticket->components()->syncWithoutDetaching([
-                $component->id => ['quantity' => 1],
-            ]);
+            $ticket->component_id = $this->resolveComponent($request);
         }
 
-        // ✅ Assign IT personnel
         if ($request->filled('it_personnel_id')) {
-            $ticket->it_personnel_id = $request->input('it_personnel_id');
+            $ticket->it_personnel_id = $request->it_personnel_id;
         } elseif (Auth::check() && !$ticket->it_personnel_id) {
             $ticket->it_personnel_id = Auth::id();
         }
 
-        // ✅ Update status
         if ($request->filled('status')) {
-            $ticket->status = $validated['status'];
+            $ticket->status = $request->status;
         }
 
         $ticket->save();
 
-        // ✅ Log update
         ActivityLog::create([
-            'user_id'      => Auth::check() ? Auth::id() : null,
+            'user_id'      => Auth::id(),
             'ticket_id'    => $ticket->id,
             'action'       => "Updated ticket (status: {$ticket->status})",
             'performed_at' => now(),
         ]);
 
-        return $request->expectsJson()
-            ? response()->json([
-                'success' => true,
-                'message' => 'Ticket updated successfully!',
-                'ticket'  => $ticket->load(['agent','teamLeader','itPersonnel','components']),
-                'stats'   => $this->getStats(),
-            ])
-            : redirect()->route('dashboard')->with('success', 'Ticket updated successfully.');
+        // 🔑 Always return JSON to prevent full-page redirect
+        return response()->json([
+            'success' => true,
+            'message' => 'Ticket updated successfully!',
+            'stats'   => $this->getStats(),
+        ]);
     }
 
     /**
-     * 🪟 Assign modal
+     * 🪟 Assign / Edit modal
      */
     public function modalAssign(Ticket $ticket)
     {
-        $users = User::all(); // optionally filter by role
+        $ticket->load(['agent', 'teamLeader', 'itPersonnel', 'component']);
+        $users = User::all();
+
         return view('tickets.assign', compact('ticket', 'users'));
     }
 
     /**
-     * 📈 Panels for AJAX
+     * 📈 AJAX endpoint for refreshing dashboard
      */
-    public function panels(Request $request)
+    public function panels()
     {
-        $stats = $this->getStats();
-        $tickets = Ticket::with(['agent','teamLeader','itPersonnel'])
-                          ->latest()
-                          ->paginate(10);
+        $stats   = $this->getStats();
+        $tickets = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component'])
+            ->latest()
+            ->paginate(10);
 
-        return $request->expectsJson()
-            ? response()->json([
-                'success' => true,
-                'stats'   => $stats,
-                'tickets' => $tickets,
-            ])
-            : view('tickets.panels', compact('stats', 'tickets'));
+        return view('tickets.panels', compact('stats', 'tickets'));
     }
 
     /**
-     * 📊 Dashboard stats
+     * 📊 Dashboard statistics
      */
     private function getStats(): array
     {
         return [
-            ['label'=>'Pending',     'count'=>Ticket::where('status','pending')->count(),     'color'=>'yellow','icon'=>'⏳'],
-            ['label'=>'In Progress', 'count'=>Ticket::where('status','in_progress')->count(), 'color'=>'blue','icon'=>'🔄'],
-            ['label'=>'Resolved',    'count'=>Ticket::where('status','resolved')->count(),    'color'=>'green','icon'=>'✅'],
+            ['label' => 'Pending',     'count' => Ticket::where('status', 'pending')->count(),     'color' => 'yellow', 'icon' => '⏳'],
+            ['label' => 'In Progress', 'count' => Ticket::where('status', 'in_progress')->count(), 'color' => 'blue',   'icon' => '🔄'],
+            ['label' => 'Resolved',    'count' => Ticket::where('status', 'resolved')->count(),    'color' => 'green',  'icon' => '✅'],
         ];
     }
 
-    /* ===== Helper methods ===== */
+    /* ===== Relationship helpers ===== */
 
     private function resolveAgent(Request $request): ?int
     {
@@ -264,5 +225,14 @@ class TicketController extends Controller
         );
 
         return $leader->id;
+    }
+
+    private function resolveComponent(Request $request): ?int
+    {
+        if (!$request->filled('component_name')) return null;
+
+        $component = Component::firstOrCreate(['name' => $request->component_name]);
+
+        return $component->id;
     }
 }

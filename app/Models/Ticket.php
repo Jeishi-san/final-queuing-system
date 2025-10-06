@@ -10,7 +10,9 @@ class Ticket extends Model
     use HasFactory;
 
     /**
+     * ------------------------------------------------------
      * Mass assignable attributes
+     * ------------------------------------------------------
      */
     protected $fillable = [
         'ticket_number',
@@ -18,13 +20,14 @@ class Ticket extends Model
         'status',
         'agent_id',
         'team_leader_id',
-        'it_personnel_id', // still named this, but references users table
+        'it_personnel_id',   // assigned IT personnel
+        'component_id',      // ✅ for the main/primary component
     ];
 
     /**
-     * -------------------------------
+     * ------------------------------------------------------
      * Relationships
-     * -------------------------------
+     * ------------------------------------------------------
      */
 
     /**
@@ -44,8 +47,7 @@ class Ticket extends Model
     }
 
     /**
-     * IT Personnel (actually a User)
-     * We keep the column name it_personnel_id but reference the users table
+     * Assigned IT Personnel (from the Users table)
      */
     public function itPersonnel()
     {
@@ -53,7 +55,17 @@ class Ticket extends Model
     }
 
     /**
-     * Components associated with this ticket
+     * ✅ Primary Component (simple belongsTo for quick display on dashboard)
+     */
+    public function component()
+    {
+        return $this->belongsTo(Component::class)->withDefault();
+    }
+
+    /**
+     * ✅ Many-to-Many Components
+     * If a ticket involves multiple components,
+     * this relation handles it via the ticket_components pivot table
      */
     public function components()
     {
@@ -71,7 +83,7 @@ class Ticket extends Model
     }
 
     /**
-     * Activity logs linked to the ticket
+     * Activity logs linked to this ticket
      */
     public function activityLogs()
     {

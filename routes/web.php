@@ -1,28 +1,27 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes (Agents – No Login Required)
+| 🌐 Public Routes (Walk-In Agents)
 |--------------------------------------------------------------------------
-|
-| Agents or walk-in users submit tickets without login.
-| They may also see live stats panels if you expose them.
-|
+| Agents can submit new tickets without login.
+| Also includes public-facing panels for live stats (optional).
+|--------------------------------------------------------------------------
 */
 
-// Landing page → Ticket submission form
+// 🟢 Landing page → ticket submission form
 Route::get('/', [TicketController::class, 'create'])
     ->name('tickets.create');
 
-// Submit a new ticket
+// 🟢 Submit a new ticket
 Route::post('/tickets', [TicketController::class, 'store'])
     ->name('tickets.store');
 
-// Optional: live stats / ticket list panel for AJAX
+// 🟢 Optional: public AJAX panel for live stats (e.g. landing page display)
 Route::get('/tickets/panels', [TicketController::class, 'panels'])
     ->name('tickets.panels');
 
@@ -30,28 +29,49 @@ Route::get('/tickets/panels', [TicketController::class, 'panels'])
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes (IT Personnel Only)
+| 🔐 Authenticated Routes (IT Personnel)
 |--------------------------------------------------------------------------
-|
-| IT Personnel must log in to see dashboard, assign/update tickets,
-| and view their own profile & activity logs.
-|
+| Require login & email verification.
+| IT staff can access dashboard, assign/update tickets, etc.
+|--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    /** 📊 Dashboard for IT Personnel */
+    /** 📊 Dashboard → Shows stats + tickets list */
     Route::get('/dashboard', [TicketController::class, 'index'])
         ->name('dashboard');
 
-    /** 🔄 Update ticket (status / IT personnel assignment) */
-    Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])
-        ->name('tickets.update');
+    /*
+    |--------------------------------------------------------------------------
+    | 🟢 AJAX Routes for Partial Refresh
+    |--------------------------------------------------------------------------
+    | These return only Blade partials (not full layout) to support
+    | dynamic updates via fetch() in the dashboard.
+    */
+    Route::get('/dashboard/panels', [TicketController::class, 'panels'])
+        ->name('dashboard.panels');
 
-    /** 🪟 Modal for assigning IT personnel (loaded by AJAX) */
+    Route::get('/dashboard/tickets-tables', [TicketController::class, 'tickets.tables'])
+        ->name('dashboard.ticketsTable');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🎟 Ticket Assignment & Update
+    |--------------------------------------------------------------------------
+    */
+    // Load modal (assign IT personnel) → AJAX
     Route::get('/tickets/{ticket}/assign', [TicketController::class, 'modalAssign'])
         ->name('tickets.assign');
 
-    /** 👤 Profile page for logged-in IT Personnel */
+    // Update ticket (assign IT personnel, change status, etc.) via AJAX
+    Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])
+        ->name('tickets.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 👤 Profile Management
+    |--------------------------------------------------------------------------
+    */
     Route::get('/profile', [ProfileController::class, 'profile'])
         ->name('profile');
 });
@@ -60,7 +80,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Authentication Scaffolding (e.g. Breeze / Fortify)
+| 🔑 Authentication Scaffolding
+|--------------------------------------------------------------------------
+| Includes login, registration, password reset, etc.
+| (Provided by Breeze, Jetstream, or Fortify)
 |--------------------------------------------------------------------------
 */
 require __DIR__ . '/auth.php';

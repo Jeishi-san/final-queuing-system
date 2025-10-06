@@ -10,32 +10,37 @@ return new class extends Migration {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
 
-            // Basic ticket info
+            // 📌 Basic ticket info
             $table->string('ticket_number')->unique();
             $table->text('issue_description');
 
-            // Ticket status
+            // 📌 Ticket status
             $table->enum('status', ['pending', 'in_progress', 'resolved'])
                   ->default('pending');
 
-            // Agent who reported the issue
+            // 📌 Agent who reported the issue
             $table->foreignId('agent_id')
-                  ->nullable()                          // agent may not always be known
-                  ->constrained('agents')               // references agents table
-                  ->nullOnDelete();                     // if agent deleted, set to NULL
+                  ->nullable()
+                  ->constrained('agents')
+                  ->nullOnDelete(); // If agent is deleted, keep ticket but set NULL
 
-            // Team leader associated with the agent
+            // 📌 Team leader associated with the agent
             $table->foreignId('team_leader_id')
-                  ->nullable()                          // not always required
-                  ->constrained('team_leaders')         // references team_leaders table
-                  ->nullOnDelete();                     // if team leader deleted, set to NULL
+                  ->nullable()
+                  ->constrained('team_leaders')
+                  ->nullOnDelete(); // If leader deleted, set NULL
 
-            // IT personnel assigned to handle the ticket
-            // We keep the column name it_personnel_id but link it to the users table
+            // 📌 IT personnel assigned to handle the ticket
             $table->foreignId('it_personnel_id')
-                  ->nullable()                          // allow NULL when ticket is unassigned
-                  ->constrained('users')                // references users table (IT staff)
-                  ->nullOnDelete();                     // if user is deleted, set FK to NULL
+                  ->nullable()
+                  ->constrained('users')
+                  ->nullOnDelete(); // If IT personnel deleted, set NULL
+
+            // ✅ NEW: Component (e.g., hardware or software involved)
+            $table->foreignId('component_id')
+                  ->nullable()
+                  ->constrained('components')
+                  ->nullOnDelete(); // If component deleted, set NULL
 
             $table->timestamps();
         });

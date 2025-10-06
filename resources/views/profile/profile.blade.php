@@ -1,16 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto p-6">
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+<div class="max-w-7xl mx-auto py-10 space-y-8">
 
-        {{-- ✅ Profile Header --}}
+    {{-- ✅ Profile Card --}}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">
-            Profile
+            👤 Profile
         </h1>
 
-        {{-- ✅ User Info --}}
-        <div class="mb-8 space-y-2">
+        <div class="space-y-2">
             <p class="text-gray-700 dark:text-gray-300">
                 <strong>Name:</strong> {{ $user->name }}
             </p>
@@ -18,18 +17,21 @@
                 <strong>Email:</strong> {{ $user->email }}
             </p>
         </div>
+    </div>
 
-        {{-- ✅ Activity Logs --}}
+    {{-- ✅ Activity Logs Card --}}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-            Recent Activity
+            📝 Recent Activity
         </h2>
 
         @if($logs->count())
             <ul class="divide-y divide-gray-200 dark:divide-gray-700">
                 @foreach($logs as $log)
-                    <li class="py-4 flex justify-between items-start">
+                    <li class="py-4 flex justify-between items-start"
+                        id="log-{{ $log->id }}">
 
-                        {{-- 🔹 Left Column: Action & Ticket Info --}}
+                        {{-- 🔹 Left Column: Action + Ticket Info --}}
                         <div>
                             {{-- Action --}}
                             <p class="text-gray-800 dark:text-gray-200">
@@ -37,16 +39,14 @@
                             </p>
 
                             {{-- Ticket Info --}}
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 @if($log->ticket)
                                     Ticket:
-                                    {{-- ✅ Clickable linked ticket --}}
                                     <a href="{{ route('dashboard', ['highlight' => $log->ticket->id]) }}"
                                        class="font-medium text-blue-600 dark:text-blue-400 hover:underline">
                                         #{{ $log->ticket->id }} — {{ $log->ticket->ticket_number }}
                                     </a>
 
-                                    {{-- ✅ Show IT Personnel if exists --}}
                                     @if($log->ticket->itPersonnel)
                                         • Handled by
                                         <span class="font-medium text-gray-800 dark:text-gray-200">
@@ -79,7 +79,7 @@
     </div>
 </div>
 
-{{-- ✅ Optional Highlight Script --}}
+{{-- ✅ Highlight Script --}}
 @if(request()->has('highlight'))
 <script>
     document.addEventListener('DOMContentLoaded', () => {

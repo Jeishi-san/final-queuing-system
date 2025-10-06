@@ -1,160 +1,143 @@
 {{-- resources/views/tickets/assign.blade.php --}}
+<div class="p-6">
 
-{{-- ✅ Panel Container --}}
-<div id="ticketPanel"
-     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-2xl shadow-lg">
-
-    {{-- Header --}}
+    {{-- ✅ Header --}}
     <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-      📝 Assign / Update Ticket
+        📝 Assign / Update Ticket
     </h2>
 
-    {{-- Form --}}
+    {{-- ✅ Ticket Details (Read-only) --}}
+    <div class="mb-6 space-y-2 bg-gray-50 dark:bg-gray-800 rounded p-4 border border-gray-200 dark:border-gray-700">
+        <p><strong>Ticket No:</strong> {{ $ticket->ticket_number }}</p>
+        <p><strong>Issue:</strong> {{ $ticket->issue_description }}</p>
+        <p><strong>Component:</strong> {{ $ticket->component->name ?? '—' }}</p>
+        <p><strong>Agent:</strong> {{ $ticket->agent->name ?? '—' }}</p>
+        <p><strong>Team Leader:</strong> {{ $ticket->teamLeader->name ?? '—' }}</p>
+        <p><strong>IT Personnel:</strong> {{ $ticket->itPersonnel->name ?? 'Unassigned' }}</p>
+        <p><strong>Status:</strong> {{ ucfirst(str_replace('_',' ',$ticket->status)) }}</p>
+        <p><strong>Created At:</strong> {{ $ticket->created_at->format('M d, Y h:i A') }}</p>
+    </div>
+
+    {{-- ✅ Update Form --}}
     <form id="updateTicketForm" method="POST" action="{{ route('tickets.update', $ticket->id) }}">
-      @csrf
-      @method('PATCH')
+        @csrf
+        @method('PATCH')
 
-      <input type="hidden" name="ticket_id" value="{{ $ticket->id }}">
+        {{-- Status --}}
+        <div class="mb-4">
+            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Status
+            </label>
+            <select id="status" name="status"
+                class="w-full border rounded p-2 mt-1 bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                <option value="pending"     {{ $ticket->status === 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="in_progress" {{ $ticket->status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                <option value="resolved"    {{ $ticket->status === 'resolved' ? 'selected' : '' }}>Resolved</option>
+            </select>
+        </div>
 
-      {{-- Ticket Number --}}
-      <div class="mb-4">
-        <label class="block text-sm font-medium">Ticket Number</label>
-        <input type="text"
-               value="{{ $ticket->ticket_number }}"
-               disabled
-               class="w-full border rounded p-2 bg-gray-100 dark:bg-gray-700">
-      </div>
+        {{-- IT Personnel --}}
+        <div class="mb-4">
+            <label for="it_personnel_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Assign IT Personnel
+            </label>
+            <select id="it_personnel_id" name="it_personnel_id"
+                class="w-full border rounded p-2 mt-1 bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Select IT Personnel --</option>
+                @foreach($users as $user)
+                    <option value="{{ $user->id }}" {{ $ticket->it_personnel_id == $user->id ? 'selected' : '' }}>
+                        {{ $user->name }} ({{ $user->email }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
 
-      {{-- Issue --}}
-      <div class="mb-4">
-        <label class="block text-sm font-medium">Issue</label>
-        <textarea rows="3" disabled
-                  class="w-full border rounded p-2 bg-gray-100 dark:bg-gray-700">{{ $ticket->issue_description }}</textarea>
-      </div>
-
-      {{-- Status --}}
-      <div class="mb-4">
-        <label class="block text-sm font-medium">Status</label>
-        <select name="status"
-                class="w-full border rounded p-2 bg-white dark:bg-gray-700 dark:text-white">
-          <option value="pending"     {{ $ticket->status === 'pending' ? 'selected' : '' }}>Pending</option>
-          <option value="in_progress" {{ $ticket->status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
-          <option value="resolved"    {{ $ticket->status === 'resolved' ? 'selected' : '' }}>Resolved</option>
-        </select>
-      </div>
-
-      {{-- IT Personnel --}}
-      <div class="mb-4">
-        <label class="block text-sm font-medium">Assign IT Personnel</label>
-        <select name="it_personnel_id"
-                class="w-full border rounded p-2 bg-white dark:bg-gray-700 dark:text-white">
-          <option value="">-- Select IT Personnel --</option>
-          @foreach($users as $user)
-            <option value="{{ $user->id }}"
-                    {{ $ticket->it_personnel_id == $user->id ? 'selected' : '' }}>
-              {{ $user->name }} ({{ $user->email }})
-            </option>
-          @endforeach
-        </select>
-      </div>
-
-      {{-- Buttons --}}
-      <div class="flex justify-end space-x-3 mt-6">
-        <button type="button" id="panelCancel"
+        {{-- Action Buttons --}}
+        <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" id="assignCancelBtn"
                 class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
-          Cancel
-        </button>
-        <button type="submit"
+                Cancel
+            </button>
+            <button type="submit"
                 class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
-          Save
-        </button>
-      </div>
+                Save
+            </button>
+        </div>
     </form>
-  </div>
 </div>
 
-{{-- ✅ Toast Notification --}}
-<div id="toast"
-     class="fixed bottom-5 right-5 px-4 py-2 rounded shadow text-white hidden z-50">
-</div>
-
-{{-- ✅ JS --}}
+{{-- ✅ Script --}}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const panel = document.getElementById('ticketPanel');
-  const cancelBtn = document.getElementById('panelCancel');
-  const form = document.getElementById('updateTicketForm');
-  const toast = document.getElementById('toast');
+    const form      = document.getElementById('updateTicketForm');
+    const cancelBtn = document.getElementById('assignCancelBtn');
 
-  function showToast(message, type = 'success') {
-    toast.textContent = message;
-    toast.className = `fixed bottom-5 right-5 px-4 py-2 rounded shadow text-white z-50 ${
-      type === 'success' ? 'bg-green-600' : 'bg-red-600'
-    }`;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 3000);
-  }
+    const modal     = document.getElementById('assignModal');
+    const toast     = document.getElementById('toast');
 
-  function closePanel() {
-    panel.style.display = 'none';
-  }
-
-  function openPanel() {
-    panel.style.display = 'flex';
-  }
-
-  // Close actions
-  cancelBtn?.addEventListener('click', closePanel);
-
-  // Close when clicking outside the panel
-  panel?.addEventListener('click', (e) => {
-    if (e.target === panel) {
-      closePanel();
+    /** ✅ Show toast message */
+    function showToast(message, type='success') {
+        toast.textContent = message;
+        toast.className = `fixed bottom-5 right-5 px-4 py-2 rounded shadow text-white z-50 ${
+            type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        }`;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
     }
-  });
 
-  // Close with Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && panel.style.display === 'flex') {
-      closePanel();
-    }
-  });
+    /** ✅ Close Modal */
+    cancelBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
 
-  // Submit via AJAX
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    /** ✅ Submit Form via AJAX */
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const formData = new FormData(form);
-    if (!formData.has('_method')) formData.append('_method', 'PATCH');
+        const formData = new FormData(form);
+        if (!formData.has('_method')) formData.append('_method', 'PATCH');
 
-    try {
-      const resp = await fetch(form.action, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: formData
-      });
+        try {
+            const resp = await fetch(form.action, {
+                method: 'POST', // Laravel PATCH via POST
+                headers: { 'Accept': 'application/json' },
+                body: formData
+            });
 
-      const data = await resp.json();
+            const data = await resp.json();
 
-      if (resp.ok && data.success) {
-        showToast('✅ Ticket updated successfully', 'success');
-        closePanel();
+            if (resp.ok && data.success) {
+                showToast('✅ Ticket updated successfully', 'success');
 
-        // Optionally refresh dashboard
-        if (window.location.pathname.includes('dashboard')) {
-          setTimeout(() => window.location.reload(), 1000);
+                // Close modal
+                modal.style.display = 'none';
+
+                // 🔥 Refresh only the dashboard panels
+                const panelResp = await fetch(`{{ route('tickets.panels') }}`);
+                if (panelResp.ok) {
+                    const html = await panelResp.text();
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+
+                    // Replace stats panel
+                    const newStats = temp.querySelector('#statsPanel');
+                    if (newStats) {
+                        document.getElementById('statsPanel').innerHTML = newStats.innerHTML;
+                    }
+
+                    // Replace ticket list panel
+                    const newTickets = temp.querySelector('#ticketsTablePanel');
+                    if (newTickets) {
+                        document.getElementById('ticketsTablePanel').innerHTML = newTickets.innerHTML;
+                    }
+                }
+            } else {
+                showToast(data.message || '⚠️ Update failed', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('⚠️ Error submitting form', 'error');
         }
-      } else {
-        showToast(data.message || 'Update failed', 'error');
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      showToast('⚠️ Error while updating ticket', 'error');
-    }
-  });
-
-  // Initialize panel as hidden
-  closePanel();
+    });
 });
 </script>
