@@ -51,8 +51,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/panels', [TicketController::class, 'panels'])
         ->name('dashboard.panels');
 
-    Route::get('/dashboard/tickets-tables', [TicketController::class, 'tickets.tables'])
+    Route::get('/dashboard/tickets-tables', [TicketController::class, 'ticketsTables'])
         ->name('dashboard.ticketsTable');
+
 
     /*
     |--------------------------------------------------------------------------

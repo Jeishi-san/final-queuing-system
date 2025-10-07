@@ -54,10 +54,6 @@
 
         {{-- Action Buttons --}}
         <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" id="assignCancelBtn"
-                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
-                Cancel
-            </button>
             <button type="submit"
                 class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
                 Save
@@ -71,11 +67,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form      = document.getElementById('updateTicketForm');
     const cancelBtn = document.getElementById('assignCancelBtn');
-
     const modal     = document.getElementById('assignModal');
     const toast     = document.getElementById('toast');
 
-    /** ✅ Show toast message */
     function showToast(message, type='success') {
         toast.textContent = message;
         toast.className = `fixed bottom-5 right-5 px-4 py-2 rounded shadow text-white z-50 ${
@@ -85,12 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.classList.add('hidden'), 3000);
     }
 
-    /** ✅ Close Modal */
     cancelBtn.addEventListener('click', () => {
         modal.style.display = 'none';
     });
 
-    /** ✅ Submit Form via AJAX */
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -107,28 +99,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await resp.json();
 
             if (resp.ok && data.success) {
-                showToast('✅ Ticket updated successfully', 'success');
+                showToast('✅ Ticket updated successfully');
 
-                // Close modal
                 modal.style.display = 'none';
 
-                // 🔥 Refresh only the dashboard panels
-                const panelResp = await fetch(`{{ route('tickets.panels') }}`);
+                // ✅ Refresh the tickets table in dashboard
+                const panelResp = await fetch(`{{ route('dashboard.ticketsTable') }}`);
                 if (panelResp.ok) {
                     const html = await panelResp.text();
                     const temp = document.createElement('div');
                     temp.innerHTML = html;
 
-                    // Replace stats panel
-                    const newStats = temp.querySelector('#statsPanel');
-                    if (newStats) {
-                        document.getElementById('statsPanel').innerHTML = newStats.innerHTML;
-                    }
-
-                    // Replace ticket list panel
-                    const newTickets = temp.querySelector('#ticketsTablePanel');
+                    const newTickets = temp.querySelector('#ticketTableContainer');
                     if (newTickets) {
-                        document.getElementById('ticketsTablePanel').innerHTML = newTickets.innerHTML;
+                        document.getElementById('ticketTableContainer').innerHTML = newTickets.innerHTML;
                     }
                 }
             } else {

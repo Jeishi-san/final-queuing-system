@@ -11,31 +11,46 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class TicketController extends Controller
 {
     /**
-     * 📊 IT Dashboard
+     * 📊 Main Dashboard
      */
     public function index(Request $request)
     {
+        // ✅ Eager-load relations to avoid N+1 queries
         $query = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component']);
 
+        // 🔎 Search filter
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('ticket_number', 'like', "%{$request->search}%")
-                  ->orWhere('issue_description', 'like', "%{$request->search}%");
+                $q->where('ticket_number', 'like', '%' . $request->search . '%')
+                  ->orWhere('issue_description', 'like', '%' . $request->search . '%');
             });
         }
 
+        // 🔎 Status filter
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $tickets = $query->latest()->paginate(10);
-        $stats   = $this->getStats();
+        // 🔎 IT Personnel filter
+        if ($request->filled('it_personnel_id')) {
+            $query->where('it_personnel_id', $request->it_personnel_id);
+        }
 
-        return view('dashboard', compact('tickets', 'stats'));
+        // ✅ Get paginated tickets
+        $tickets = $query->latest()->paginate(10);
+
+        // ✅ Dashboard stats (adjust this method as needed)
+        $stats = $this->getStats();
+
+        // ✅ All users for filter dropdown
+        $itPersonnels = User::all();
+
+        return view('dashboard', compact('tickets', 'stats', 'itPersonnels'));
     }
 
     /**
@@ -43,16 +58,17 @@ class TicketController extends Controller
      */
     public function create()
     {
-        $stats   = $this->getStats();
-        $tickets = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component'])
+        $stats        = $this->getStats();
+        $tickets      = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component'])
             ->latest()
             ->paginate(10);
+        $itPersonnels = User::all();
 
-        return view('tickets.create', compact('stats', 'tickets'));
+        return view('tickets.create', compact('stats', 'tickets', 'itPersonnels'));
     }
 
     /**
-     * 💾 Store a new ticket
+     * 💾 Store new ticket
      */
     public function store(Request $request)
     {
@@ -75,18 +91,14 @@ class TicketController extends Controller
         $validated = $validator->validated();
         $ticketNo  = $validated['ticket_number'] ?? 'T-' . time();
 
-        $agentId     = $this->resolveAgent($request);
-        $leaderId    = $this->resolveTeamLeader($request);
-        $componentId = $this->resolveComponent($request);
-
         $ticket = Ticket::create([
             'ticket_number'     => $ticketNo,
             'issue_description' => $validated['issue_description'],
             'status'            => 'pending',
-            'agent_id'          => $agentId,
-            'team_leader_id'    => $leaderId,
+            'agent_id'          => $this->resolveAgent($request),
+            'team_leader_id'    => $this->resolveTeamLeader($request),
             'it_personnel_id'   => null,
-            'component_id'      => $componentId,
+            'component_id'      => $this->resolveComponent($request),
         ]);
 
         ActivityLog::create([
@@ -101,6 +113,9 @@ class TicketController extends Controller
                 'success' => true,
                 'message' => 'Ticket submitted successfully!',
                 'stats'   => $this->getStats(),
+                'ticket'  => [
+                    'ticket_number' => $ticket->ticket_number
+                ]
             ])
             : redirect()->route('tickets.create')->with('success', 'Ticket submitted successfully!');
     }
@@ -126,6 +141,7 @@ class TicketController extends Controller
                 : back()->withErrors($validator)->withInput();
         }
 
+        // 🔄 Resolve related entities
         if ($request->filled('agent_email')) {
             $ticket->agent_id = $this->resolveAgent($request);
         }
@@ -157,7 +173,7 @@ class TicketController extends Controller
             'performed_at' => now(),
         ]);
 
-        // 🔑 Always return JSON to prevent full-page redirect
+        // ✅ Always return JSON (AJAX use)
         return response()->json([
             'success' => true,
             'message' => 'Ticket updated successfully!',
@@ -177,16 +193,70 @@ class TicketController extends Controller
     }
 
     /**
-     * 📈 AJAX endpoint for refreshing dashboard
+     * 📊 AJAX endpoint for panels (stats + tickets) - for both guest and authenticated users
      */
-    public function panels()
+    public function panels(Request $request)
     {
-        $stats   = $this->getStats();
-        $tickets = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component'])
-            ->latest()
-            ->paginate(10);
+        try {
+            $stats = $this->getStats();
 
-        return view('tickets.panels', compact('stats', 'tickets'));
+            // Handle both authenticated and guest users
+            if (Auth::check()) {
+                $tickets = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component'])
+                    ->latest()
+                    ->paginate(10);
+                $view = 'tickets.panels';
+            } else {
+                $tickets = collect(); // Empty collection for guests
+                $view = 'tickets.stats';
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'stats' => $stats,
+                    'tickets' => $tickets,
+                    'html' => view($view, compact('stats', 'tickets'))->render()
+                ]);
+            }
+
+            return view($view, compact('stats', 'tickets'));
+
+        } catch (\Exception $e) {
+            Log::error('Panels method error: ' . $e->getMessage());
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to load panels',
+                    'html' => '<div class="p-4 bg-red-100 text-red-700 rounded">Error loading panels</div>'
+                ], 500);
+            }
+            
+            return view('tickets.stats', ['stats' => $this->getStats()]);
+        }
+    }
+
+    /**
+     * 📈 AJAX endpoint for refreshing dashboard
+     * Supports filters: status & IT personnel
+     */
+    public function ticketsTables(Request $request)
+    {
+        $query = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component']);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('it_personnel_id')) {
+            $query->where('it_personnel_id', $request->it_personnel_id);
+        }
+
+        $tickets      = $query->latest()->paginate(10);
+        $itPersonnels = User::all();
+
+        return view('tickets.tables', compact('tickets', 'itPersonnels'));
     }
 
     /**
