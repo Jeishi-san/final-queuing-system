@@ -1,9 +1,11 @@
 <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+
     {{-- ✅ Header --}}
     <div class="flex flex-col sm:flex-row items-center justify-between mb-4 gap-3">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
             🎫 Tickets List
         </h2>
+    </div>
 
     {{-- ✅ Tickets Table --}}
     <div class="overflow-x-auto">
@@ -18,6 +20,7 @@
                     <th class="border px-4 py-2">Team Leader</th>
                     <th class="border px-4 py-2">IT Personnel</th>
                     <th class="border px-4 py-2">Status</th>
+                    <th class="border px-4 py-2">Created At</th>
                     <th class="border px-4 py-2 text-center">Actions</th>
                 </tr>
             </thead>
@@ -26,6 +29,7 @@
                 @forelse($tickets as $ticket)
                     <tr id="ticket-row-{{ $ticket->id }}"
                         class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+
                         {{-- ID --}}
                         <td class="border px-4 py-2">{{ $ticket->id }}</td>
 
@@ -73,6 +77,17 @@
                             </span>
                         </td>
 
+                        {{-- Created At --}}
+                        <td class="border px-4 py-2 text-xs text-gray-600 dark:text-gray-400">
+                            <span title="{{ $ticket->created_at->format('F j, Y \a\t g:i A') }}">
+                                {{ $ticket->created_at->diffForHumans() }}
+                            </span>
+                            <br>
+                            <span class="text-xs opacity-75">
+                                {{ $ticket->created_at->format('M j, Y') }}
+                            </span>
+                        </td>
+
                         {{-- Actions --}}
                         <td class="border px-4 py-2 text-center">
                             <button type="button"
@@ -84,7 +99,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center p-4 text-gray-500 dark:text-gray-400">
+                        <td colspan="10" class="text-center p-4 text-gray-500 dark:text-gray-400">
                             No tickets found.
                         </td>
                     </tr>
@@ -93,8 +108,11 @@
         </table>
     </div>
 
-    {{-- ✅ Pagination --}}
-    <div class="mt-4">
-        {{ $tickets->links() }}
-    </div>
+    {{-- ✅ Pagination (works with paginate()) --}}
+    @if($tickets instanceof \Illuminate\Pagination\LengthAwarePaginator)
+        <div class="mt-4">
+            {{ $tickets->appends(request()->query())->links() }}
+        </div>
+    @endif
+
 </div>

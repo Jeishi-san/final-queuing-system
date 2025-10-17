@@ -3,207 +3,114 @@
 @section('content')
 <div class="max-w-7xl mx-auto py-10 space-y-10">
 
-    {{-- ✅ Stats Section --}}
-    <div id="statsPanel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach ($stats as $stat)
-            <div
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-{{ $stat['color'] }}-500 p-6 hover:shadow-xl transition duration-300">
-
-                {{-- Label + Icon --}}
-                <div class="flex items-center space-x-3">
-                    <span class="text-3xl text-{{ $stat['color'] }}-600">{!! $stat['icon'] !!}</span>
-                    <h3 class="text-lg font-semibold text-{{ $stat['color'] }}-700 dark:text-{{ $stat['color'] }}-300">
-                        {{ $stat['label'] }}
-                    </h3>
-                </div>
-
-                {{-- Count --}}
-                <p class="mt-4 text-4xl font-bold text-{{ $stat['color'] }}-700 dark:text-{{ $stat['color'] }}-400">
-                    {{ $stat['count'] }}
-                </p>
-            </div>
-        @endforeach
+    {{-- 📈 Stats Overview --}}
+    @if(isset($stats))
+    <div id="statsPanel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Total Tickets">
+            <h2 class="text-gray-500 dark:text-gray-400 text-sm">Total Tickets</h2>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ $stats['total'] ?? 0 }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Pending">
+            <h2 class="text-gray-500 dark:text-gray-400 text-sm">Pending</h2>
+            <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ $stats['pending'] ?? 0 }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Resolved">
+            <h2 class="text-gray-500 dark:text-gray-400 text-sm">Resolved</h2>
+            <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $stats['resolved'] ?? 0 }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Overdue">
+            <h2 class="text-gray-500 dark:text-gray-400 text-sm">Overdue</h2>
+            <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ $stats['overdue'] ?? 0 }}</p>
+        </div>
     </div>
+    @endif
 
-    {{-- ✅ Tickets Section --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-bold mb-6 flex items-center text-blue-600 dark:text-blue-400">
-            📋 Tickets List
-        </h2>
-
-        {{-- ✅ Filters --}}
-        <form id="ticketFilters" method="GET" class="flex flex-wrap gap-4 mb-6">
-            {{-- Search --}}
-            <input type="text"
-                   name="search"
-                   value="{{ request('search') }}"
-                   placeholder="Search tickets..."
-                   class="flex-1 border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
-
-            {{-- Status Filter --}}
-            <select id="statusFilter" name="status"
-                    class="border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
-                <option value="">All Status</option>
-                <option value="pending"     {{ request('status')==='pending' ? 'selected' : '' }}>Pending</option>
-                <option value="in_progress" {{ request('status')==='in_progress' ? 'selected' : '' }}>In Progress</option>
-                <option value="resolved"    {{ request('status')==='resolved' ? 'selected' : '' }}>Resolved</option>
-            </select>
-
-            {{-- IT Personnel Filter --}}
-            <select id="itPersonnelFilter" name="it_personnel_id"
-                    class="border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
-                <option value="">All IT Personnel</option>
-                @foreach ($itPersonnels as $personnel)
-                    <option value="{{ $personnel->id }}"
-                        {{ request('it_personnel_id') == $personnel->id ? 'selected' : '' }}>
-                        {{ $personnel->name }}
-                    </option>
-                @endforeach
-            </select>
-
-            {{-- Filter Button --}}
+    {{-- 🎯 Dashboard Header --}}
+    <div class="flex justify-between items-center">
+        {{-- 🔍 Search Form --}}
+        <form id="ticketFilters" method="GET" class="flex items-center space-x-2">
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Search ticket, agent, leader..."
+                   class="px-4 py-2 border rounded-lg w-64 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none dark:bg-gray-700 dark:text-white">
             <button type="submit"
-                    class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                Filter
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                Search
             </button>
         </form>
+    </div>
 
-        {{-- ✅ Tickets Table Container --}}
+    {{-- 🧾 Ticket Table Section --}}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                📋 Ticket List
+            </h2>
+        </div>
+
+        {{-- 🏷️ Additional Filters --}}
+        <form id="extraFilters" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 items-end">
+            {{-- 🏷 Status --}}
+            <div>
+                <select name="status" id="statusFilter"
+                    class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Status</option>
+                    <option value="pending"     {{ request('status') == 'pending' ? 'selected' : '' }}>⏳ Pending</option>
+                    <option value="in_progress" {{ request('status') == 'in_progress' ? 'selected' : '' }}>🔄 In Progress</option>
+                    <option value="resolved"    {{ request('status') == 'resolved' ? 'selected' : '' }}>✅ Resolved</option>
+                </select>
+            </div>
+
+            {{-- 👨‍💻 IT Personnel --}}
+            <div>
+                <select name="it_personnel_id" id="itPersonnelFilter"
+                    class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    <option value="">All IT Personnel</option>
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}" {{ request('it_personnel_id') == $user->id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- ✅ Buttons --}}
+            <div class="flex gap-2 md:col-span-2">
+                <button type="submit" id="applyFiltersBtn"
+                    class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    🔍 Filter
+                </button>
+                <a href="{{ route('dashboard') }}" id="clearFiltersBtn"
+                   class="flex-1 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition text-center">
+                   ❌ Clear
+                </a>
+            </div>
+        </form>
+
+        {{-- 🧩 Ticket Table --}}
         <div id="ticketTableContainer">
-            @include('tickets.tables', ['tickets' => $tickets, 'itPersonnels' => $itPersonnels])
+            @include('tickets.tables', ['tickets' => $tickets])
         </div>
     </div>
 </div>
 
-{{-- ✅ Assign Modal --}}
-<div id="assignModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-lg w-full relative">
-        <button id="assignModalClose" class="absolute top-2 right-2 text-gray-600 hover:text-gray-800">✖</button>
-        <div id="assignFormContainer">Loading...</div>
+{{-- 🧱 Assign Modal --}}
+<div id="assignModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-y-auto relative">
+        <button id="assignModalClose" class="absolute top-4 right-4 text-gray-500 hover:text-red-600 dark:text-gray-400 text-xl">
+            ✕
+        </button>
+        <div id="assignFormContainer" class="p-6 flex justify-center items-center min-h-[200px]">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
     </div>
 </div>
 
-{{-- ✅ Toast --}}
-<div id="toast" class="fixed bottom-5 right-5 px-4 py-2 rounded shadow text-white hidden z-50"></div>
+{{-- 🔔 Toast --}}
+<div id="toast" class="fixed bottom-5 right-5 px-6 py-3 rounded-xl shadow-lg text-white hidden z-50 max-w-sm"></div>
 
-{{-- ✅ JS --}}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const assignModal     = document.getElementById('assignModal');
-    const assignClose     = document.getElementById('assignModalClose');
-    const assignContainer = document.getElementById('assignFormContainer');
-    const toast           = document.getElementById('toast');
-
-    /** ✅ Toast helper */
-    function showToast(message, type = 'success') {
-        toast.textContent = message;
-        toast.className = `fixed bottom-5 right-5 px-4 py-2 rounded shadow text-white z-50 ${
-            type === 'success' ? 'bg-green-600' : 'bg-red-600'
-        }`;
-        toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 3000);
-    }
-
-    /** ✅ Refresh dashboard table */
-    async function refreshDashboard() {
-        const status      = document.getElementById('statusFilter')?.value || '';
-        const itPersonnel = document.getElementById('itPersonnelFilter')?.value || '';
-
-        const params = new URLSearchParams();
-        if (status) params.append('status', status);
-        if (itPersonnel) params.append('it_personnel_id', itPersonnel);
-
-        try {
-            const resp = await fetch(`{{ route('dashboard.ticketsTable') }}?${params.toString()}`);
-            if (resp.ok) {
-                document.getElementById('ticketTableContainer').innerHTML = await resp.text();
-                bindAssignButtons(); // Re-bind buttons after table refresh
-            } else {
-                console.error('Refresh failed:', resp.statusText);
-            }
-        } catch (err) {
-            console.error('❌ Refresh failed:', err);
-        }
-    }
-
-    /** ✅ Open Assign Modal */
-    async function openAssignModal(ticketId) {
-        try {
-            const resp = await fetch(`/tickets/${ticketId}/assign`);
-            if (!resp.ok) throw new Error('Failed to load assign form');
-
-            assignContainer.innerHTML = await resp.text();
-            assignModal.style.display = 'flex';
-            initAssignForm();
-        } catch (err) {
-            console.error(err);
-            showToast('⚠️ Unable to load assign form', 'error');
-        }
-    }
-
-    /** ✅ Close Modal */
-    function closeAssignModal() {
-        assignModal.style.display = 'none';
-        assignContainer.innerHTML = '';
-    }
-
-    /** ✅ Handle Assign Form Submit */
-    function initAssignForm() {
-        const form = document.getElementById('updateTicketForm');
-        if (!form) return;
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            if (!formData.has('_method')) formData.append('_method', 'PATCH');
-
-            try {
-                const resp = await fetch(form.action, {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json' },
-                    body: formData
-                });
-
-                const data = await resp.json();
-
-                if (resp.ok && data.success) {
-                    showToast('✅ Ticket updated successfully', 'success');
-                    closeAssignModal();
-                    refreshDashboard();
-                } else {
-                    showToast(data.message || '⚠️ Update failed', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('⚠️ Error while updating ticket', 'error');
-            }
-        });
-    }
-
-    /** ✅ Bind Assign buttons */
-    function bindAssignButtons() {
-        document.querySelectorAll('.open-assign').forEach(button => {
-            button.addEventListener('click', () => openAssignModal(button.dataset.id));
-        });
-    }
-
-    /** ✅ Event Listeners */
-    assignClose.addEventListener('click', closeAssignModal);
-    assignModal.addEventListener('click', e => { if (e.target === assignModal) closeAssignModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && assignModal.style.display === 'flex') closeAssignModal(); });
-
-    // Initial bind
-    bindAssignButtons();
-
-    // Auto-refresh when filters change
-    document.getElementById('statusFilter').addEventListener('change', refreshDashboard);
-    document.getElementById('itPersonnelFilter').addEventListener('change', refreshDashboard);
-
-    // Custom event for new tickets
-    window.addEventListener('ticket:created', () => {
-        refreshDashboard();
-        showToast('✅ New ticket added!', 'success');
-    });
-});
-</script>
+{{-- 📁 External JavaScript --}}
+@push('scripts')
+@vite('resources/js/dashboard.js')
+@endpush
 @endsection

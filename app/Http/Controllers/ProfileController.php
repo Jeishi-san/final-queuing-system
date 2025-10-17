@@ -4,41 +4,91 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 use App\Models\ActivityLog;
+use App\Models\Ticket;
 
 class ProfileController extends Controller
 {
     /**
      * Show the logged-in user's profile with their activity logs.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Contracts\View\View
      */
     public function profile(Request $request): View
     {
-        // ✅ Get the currently logged-in user
         $user = $request->user();
 
-        // ✅ Fetch activity logs for this user
-        // - Eager-load related ticket and ticket’s IT personnel
-        // - Order primarily by performed_at (when action happened)
-        // - Fallback to created_at for older logs
-        // - Paginate for better performance
+        if (!$user) {
+            abort(401, 'Unauthorized');
+        }
+
+        $itPersonnelRelation = 'itPersonnel';
+
+        // ✅ Fetch all logs related to this user
         $logs = ActivityLog::query()
             ->with([
-                // 🔥 UPDATED to match your actual column names
-                'ticket:id,ticket_number,issue_description,status,it_personnel_id',
-                'ticket.itPersonnel:id,name,email',
+                'ticket' => function ($query) use ($itPersonnelRelation) {
+                    $query->select([
+                        'id',
+                        'ticket_number',
+                        'issue_description',
+                        'status',
+                        'it_personnel_id'
+                    ])->with([
+                        $itPersonnelRelation => function ($query) {
+                            $query->select('id', 'name', 'email');
+                        }
+                    ]);
+                },
             ])
             ->where('user_id', $user->id)
-            ->orderByDesc('performed_at')
-            ->orderByDesc('created_at')
-            ->paginate(10);
+            ->orderByRaw('COALESCE(performed_at, created_at) DESC')
+            ->paginate($request->get('per_page', 10));
 
-        // ✅ Return the profile view
         return view('profile.profile', [
             'user' => $user,
             'logs' => $logs,
         ]);
+    }
+
+    /**
+     * ✅ Log a ticket assignment activity.
+     */
+    public function logAssignment(int $ticketId, Request $request): void
+    {
+        $user = $request->user();
+
+        if (!$user) return;
+
+        $ticket = Ticket::find($ticketId);
+
+        if ($ticket) {
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'ticket_id' => $ticket->id,
+                'action' => "Assigned ticket #{$ticket->ticket_number} to IT personnel",
+                'performed_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * ✅ Log a ticket update activity.
+     */
+    public function logUpdate(int $ticketId, Request $request): void
+    {
+        $user = $request->user();
+
+        if (!$user) return;
+
+        $ticket = Ticket::find($ticketId);
+
+        if ($ticket) {
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'ticket_id' => $ticket->id,
+                'action' => "Updated ticket #{$ticket->ticket_number} (status: {$ticket->status})",
+                'performed_at' => now(),
+            ]);
+        }
     }
 }

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class User extends Authenticatable
 {
@@ -19,7 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        // 'role', // Uncomment if you use a role column to separate IT staff from others
+        // 'role', // Uncomment if you use roles (e.g., 'it', 'agent', 'admin')
     ];
 
     /**
@@ -41,7 +43,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'password' => 'hashed',
         ];
     }
 
@@ -53,17 +55,44 @@ class User extends Authenticatable
     /**
      * All activity logs performed by this user.
      */
-    public function activityLogs()
+    public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class);
     }
 
     /**
-     * Tickets that were assigned to this user (IT personnel).
+     * Tickets assigned to this user (as IT personnel).
      */
-    public function assignedTickets()
+    public function assignedTickets(): HasMany
     {
         return $this->hasMany(Ticket::class, 'it_personnel_id');
+    }
+
+    /* ============================================================
+     |  Notifications (provided by Notifiable trait)
+     |============================================================
+     |
+     | The Notifiable trait already defines:
+     | - $this->notifications()
+     | - $this->unreadNotifications()
+     |
+     | But we can define helper methods to simplify access.
+     */
+
+    /**
+     * Get unread notifications count.
+     */
+    public function unreadCount(): int
+    {
+        return $this->unreadNotifications()->count();
+    }
+
+    /**
+     * Get all notifications (latest first).
+     */
+    public function allNotifications(): Collection
+    {
+        return $this->notifications()->latest()->get();
     }
 
     /* ============================================================
@@ -72,15 +101,16 @@ class User extends Authenticatable
      */
 
     /**
-     * Check if this user is an IT personnel.
-     * Useful if you distinguish staff by a 'role' column in users table.
+     * Determine if the user is an IT personnel.
+     * 
+     * @return bool
      */
     public function isITPersonnel(): bool
     {
-        // If you store a role:
+        // Example with roles:
         // return $this->role === 'it';
 
-        // If you only use this user as IT staff when they have assigned tickets:
+        // Or dynamic check based on assignments:
         return $this->assignedTickets()->exists();
     }
 }
