@@ -9,46 +9,71 @@ use App\Http\Controllers\NotificationController;
 |--------------------------------------------------------------------------
 | 🌐 Public Routes (Walk-In Agents)
 |--------------------------------------------------------------------------
-| Accessible to walk-in agents without authentication
+| Accessible to walk-in agents without authentication.
+| These routes render the public-facing ticket creation panel.
 */
 Route::get('/', [TicketController::class, 'create'])->name('tickets.create');
 Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
 Route::get('/tickets/panels', [TicketController::class, 'panels'])->name('tickets.panels');
 
-// ✅ Consolidated AJAX ticket existence check
+// ✅ AJAX endpoint to check if a ticket already exists
 Route::get('/tickets/check', [TicketController::class, 'check'])->name('tickets.check');
 
 /*
 |--------------------------------------------------------------------------
 | 🔐 Authenticated Routes (IT Personnel)
 |--------------------------------------------------------------------------
-| Require login and email verification
+| Protected routes that require login and email verification.
 */
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // 📊 Dashboard & dynamic components
+    /*
+    |--------------------------------------------------------------------------
+    | 📊 Dashboard (Main View + AJAX Partials)
+    |--------------------------------------------------------------------------
+    | Main dashboard view loads once. AJAX calls fetch tables/stats separately.
+    */
     Route::get('/dashboard', [TicketController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dashboard/tickets-table', [TicketController::class, 'ticketsTable'])->name('dashboard.ticketsTable');
 
-    // ✅ Tickets stats for AJAX refresh (must return partial Blade view with #statsPanel)
-    Route::get('/dashboard/tickets-stats', [TicketController::class, 'ticketsStats'])->name('dashboard.ticketsStats');
+    // ✅ AJAX: Tickets Table Partial (for live search/pagination)
+    Route::get('/dashboard/tickets-table', [TicketController::class, 'ticketsTable'])
+        ->name('dashboard.ticketsTable');
 
-    // 🔔 Notifications
+    // ✅ AJAX: Dashboard Stats Partial
+    Route::get('/dashboard/tickets-stats', [TicketController::class, 'ticketsStats'])
+        ->name('dashboard.ticketsStats');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔔 Notifications
+    |--------------------------------------------------------------------------
+    */
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/clear', [NotificationController::class, 'clear'])->name('notifications.clear');
 
-    // 🎟 Ticket Assignment & Update
-    Route::get('/tickets/{ticket}/assign', [TicketController::class, 'modalAssign'])->name('tickets.assign');
+    /*
+    |--------------------------------------------------------------------------
+    | 🎟 Ticket Assignment & Update
+    |--------------------------------------------------------------------------
+    */
+    // ✅ FIXED: Changed from modalAssign to assign to match JavaScript expectations
+    Route::get('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
+    
+    // ✅ FIXED: Ensure this route exists for form submissions
     Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
 
-    // 👤 User Profile
+    /*
+    |--------------------------------------------------------------------------
+    | 👤 User Profile
+    |--------------------------------------------------------------------------
+    */
     Route::get('/profile', [ProfileController::class, 'profile'])->name('profile');
 });
 
 /*
 |--------------------------------------------------------------------------
-| 🔑 Authentication
+| 🔑 Authentication Routes
 |--------------------------------------------------------------------------
 */
 require __DIR__ . '/auth.php';

@@ -37,6 +37,12 @@
                 Search
             </button>
         </form>
+
+        {{-- 🔄 Refresh Button --}}
+        <button id="refreshDashboardBtn" 
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+            🔄 Refresh
+        </button>
     </div>
 
     {{-- 🧾 Ticket Table Section --}}
@@ -68,7 +74,7 @@
                     <option value="">All IT Personnel</option>
                     @foreach ($users as $user)
                         <option value="{{ $user->id }}" {{ request('it_personnel_id') == $user->id ? 'selected' : '' }}>
-                            {{ $user->name }}
+                            {{ $user->name }} ({{ $user->email }})
                         </option>
                     @endforeach
                 </select>
@@ -87,8 +93,9 @@
             </div>
         </form>
 
-        {{-- 🧩 Ticket Table --}}
+        {{-- 🧩 Ticket Table Container --}}
         <div id="ticketTableContainer">
+            {{-- This will only contain the table and pagination, no headers --}}
             @include('tickets.tables', ['tickets' => $tickets])
         </div>
     </div>
@@ -96,21 +103,24 @@
 
 {{-- 🧱 Assign Modal --}}
 <div id="assignModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full overflow-y-auto relative">
-        <button id="assignModalClose" class="absolute top-4 right-4 text-gray-500 hover:text-red-600 dark:text-gray-400 text-xl">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+        <button id="assignModalClose" class="absolute top-4 right-4 text-gray-500 hover:text-red-600 dark:text-gray-400 text-xl z-10 bg-white dark:bg-gray-800 rounded-full p-1">
             ✕
         </button>
-        <div id="assignFormContainer" class="p-6 flex justify-center items-center min-h-[200px]">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div id="assignFormContainer" class="p-6">
+            {{-- Modal content will be loaded here via AJAX --}}
+            <div class="flex justify-center items-center min-h-[200px]">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
         </div>
     </div>
 </div>
 
 {{-- 🔔 Toast --}}
 <div id="toast" class="fixed bottom-5 right-5 px-6 py-3 rounded-xl shadow-lg text-white hidden z-50 max-w-sm"></div>
+@endsection
 
 {{-- 📁 External JavaScript --}}
 @push('scripts')
 @vite('resources/js/dashboard.js')
 @endpush
-@endsection

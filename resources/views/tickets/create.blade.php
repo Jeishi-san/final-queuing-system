@@ -32,13 +32,14 @@
 <!-- ✅ Main -->
 <main class="max-w-7xl mx-auto py-10 grid grid-cols-1 lg:grid-cols-2 gap-8 px-4">
     <!-- 🔹 Ticket Panel -->
-    <section id="ticketPanel">
-        @include('tickets.panels', [
-            'pendingTickets' => $pendingTickets,
-            'inProgressTickets' => $inProgressTickets,
-            'resolvedTickets' => $resolvedTickets
-        ])
-    </section>
+<section id="ticketPanel">
+    @include('tickets.panels', [
+        'pendingTickets' => $pendingTickets ?? collect(),
+        'inProgressTickets' => $inProgressTickets ?? collect(),
+        'resolvedTickets' => $resolvedTickets ?? collect(),
+    ])
+</section>
+
 
     <!-- 🔹 Ticket Form -->
     <section class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">

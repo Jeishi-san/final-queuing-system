@@ -7,7 +7,7 @@ use App\Models\Agent;
 use App\Models\TeamLeader;
 use App\Models\Component;
 use App\Models\User;
-use App\Models\ActivityLog; // ✅ Added for activity tracking
+use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -56,65 +56,68 @@ class TicketController extends Controller
     /**
      * 🧾 AJAX: Tickets Table Partial
      */
-    public function ticketsTable(Request $request)
-    {
-        try {
-            $query = Ticket::query();
+ /**
+ * 🧾 AJAX: Tickets Table Partial
+ */
+public function ticketsTable(Request $request)
+{
+    try {
+        $query = Ticket::with(['agent', 'teamLeader', 'itPersonnel', 'component']);
 
-            // 🔍 Search filter (title or description)
-            if ($request->filled('search')) {
-                $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
-                });
-            }
-
-            // 🏷️ Status filter
-            if ($request->filled('status')) {
-                $query->where('status', $request->input('status'));
-            }
-
-            // 👨‍💻 IT Personnel filter
-            if ($request->filled('it_personnel_id')) {
-                $query->where('it_personnel_id', $request->input('it_personnel_id'));
-            }
-
-            // 🕓 Paginate instead of get() — 10 per page
-            $tickets = $query->latest()->paginate(10);
-
-            return view('tickets.tables', compact('tickets'))->render();
-
-        } catch (\Throwable $e) {
-            Log::error('Error loading tickets table', [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'message' => $e->getMessage(),
-            ]);
-
-            return response('Failed to load tickets table.', 500);
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('ticket_number', 'like', "%{$search}%")
+                  ->orWhere('issue_description', 'like', "%{$search}%")
+                  ->orWhereHas('agent', fn($a) => $a->where('email', 'like', "%{$search}%"));
+            });
         }
-    }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('it_personnel_id')) {
+            $query->where('it_personnel_id', $request->input('it_personnel_id'));
+        }
+
+        $tickets = $query->latest()->paginate(10);
+        
+        // ✅ REMOVE ->render() - just return the view
+        return view('tickets.tables', compact('tickets'));
+
+    } catch (\Throwable $e) {
+        Log::error('Error loading tickets table', [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'message' => $e->getMessage(),
+        ]);
+
+        return response('Failed to load tickets table.', 500);
+    }
+}
     /**
      * 📊 Dashboard Stats Partial (AJAX)
      */
-    public function ticketsStats(Request $request)
-    {
-        try {
-            $stats = $this->getStats();
-            return view('tickets.stats', compact('stats'))->render();
-        } catch (\Throwable $e) {
-            Log::error('Error loading dashboard stats', [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'message' => $e->getMessage(),
-            ]);
+/**
+ * 📊 Dashboard Stats Partial (AJAX)
+ */
+public function ticketsStats(Request $request)
+{
+    try {
+        $stats = $this->getStats();
+        // ✅ REMOVE ->render() here too
+        return view('tickets.stats', compact('stats'));
+    } catch (\Throwable $e) {
+        Log::error('Error loading dashboard stats', [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'message' => $e->getMessage(),
+        ]);
 
-            return response('Failed to load dashboard stats.', 500);
-        }
+        return response('Failed to load dashboard stats.', 500);
     }
-
+}
     /**
      * 🧩 Stats for Dashboard
      */
@@ -130,12 +133,63 @@ class TicketController extends Controller
             ->count();
 
         return [
-            ['label' => 'Pending', 'count' => $counts['pending'] ?? 0, 'color' => 'yellow', 'icon' => '⏳'],
-            ['label' => 'In Progress', 'count' => $counts['in_progress'] ?? 0, 'color' => 'blue', 'icon' => '🔄'],
-            ['label' => 'Resolved', 'count' => $counts['resolved'] ?? 0, 'color' => 'green', 'icon' => '✅'],
-            ['label' => 'Overdue', 'count' => $overdue, 'color' => 'red', 'icon' => '⚠️'],
+            'total' => array_sum($counts),
+            'pending' => $counts['pending'] ?? 0,
+            'in_progress' => $counts['in_progress'] ?? 0,
+            'resolved' => $counts['resolved'] ?? 0,
+            'overdue' => $overdue,
         ];
     }
+
+    /**
+     * 🎯 Assign Ticket Modal - FIXED METHOD NAME
+     */
+public function assign(Ticket $ticket)
+{
+    $users = User::all();
+    
+    // Return modal HTML for AJAX requests
+    if (request()->ajax()) {
+        return view('tickets.assign', compact('ticket', 'users'));
+    }
+    
+    // For direct URL access, redirect back to dashboard
+    return redirect()->route('dashboard')->with('info', 'Please use the assign buttons in the dashboard to assign tickets.');
+}
+
+/**
+ * ⚙️ Update Ticket (Assign / Resolve) - FIXED PARAMETER
+ */
+public function update(Request $request, Ticket $ticket)
+{
+    $validated = $request->validate([
+        'user_id' => 'nullable|exists:users,id', // Changed from it_personnel_id to user_id
+        'status' => 'required|string|in:pending,in_progress,resolved',
+    ]);
+
+    $oldStatus = $ticket->status;
+    $oldPersonnel = $ticket->user_id; // Changed from it_personnel_id
+
+    $ticket->update([
+        'user_id' => $validated['user_id'] ?? null, // Changed from it_personnel_id
+        'status' => $validated['status'],
+        'resolved_at' => $validated['status'] === 'resolved' ? now() : null,
+    ]);
+
+    // ✅ Automatically record to activity_logs for profile tracking
+    $this->logActivity($ticket, $oldStatus, $oldPersonnel);
+    $this->handleTicketUpdateNotifications($ticket);
+
+    if ($request->ajax()) {
+        return response()->json([
+            'success' => true, 
+            'message' => 'Ticket updated successfully!', 
+            'ticket' => $ticket
+        ]);
+    }
+
+    return redirect()->route('dashboard')->with('success', 'Ticket updated successfully!');
+}
 
     /**
      * 🧾 Ticket Creation Page (Guest)
@@ -143,7 +197,17 @@ class TicketController extends Controller
     public function create()
     {
         $stats = $this->getStats();
-        return view('tickets.create', ['stats' => $stats]);
+
+        $pendingTickets = Ticket::where('status', 'pending')->latest()->get();
+        $inProgressTickets = Ticket::where('status', 'in_progress')->latest()->get();
+        $resolvedTickets = Ticket::where('status', 'resolved')->latest()->get();
+
+        return view('tickets.create', [
+            'stats' => $stats,
+            'pendingTickets' => $pendingTickets,
+            'inProgressTickets' => $inProgressTickets,
+            'resolvedTickets' => $resolvedTickets,
+        ]);
     }
 
     /**
@@ -217,49 +281,6 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * 🎯 Assign Ticket Modal
-     */
-    public function modalAssign(Ticket $ticket)
-    {
-        $itPersonnels = Cache::remember('it_personnels', now()->addMinutes(5), fn() => User::all());
-        return view('tickets.assign', compact('ticket', 'itPersonnels'));
-    }
-
-    /**
-     * ⚙️ Update Ticket (Assign / Resolve)
-     */
-    public function update(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'it_personnel_id' => 'nullable|exists:users,id',
-            'status' => 'required|string|in:pending,in_progress,resolved',
-        ]);
-
-        $ticket = Ticket::findOrFail($id);
-        $oldStatus = $ticket->status;
-        $oldPersonnel = $ticket->it_personnel_id;
-
-        $ticket->update([
-            'it_personnel_id' => $validated['it_personnel_id'] ?? null,
-            'status' => $validated['status'],
-            'resolved_at' => $validated['status'] === 'resolved' ? now() : null,
-        ]);
-
-        // ✅ Log the activity
-        $this->logActivity($ticket, $oldStatus, $oldPersonnel);
-
-        // 🔔 Notifications
-        $this->handleTicketUpdateNotifications($ticket);
-
-        return $request->expectsJson()
-            ? response()->json(['success' => true, 'message' => 'Ticket updated successfully!', 'ticket' => $ticket])
-            : redirect()->route('dashboard')->with('success', 'Ticket updated successfully!');
-    }
-
-    /**
-     * 🧾 Log Activity (Assign / Resolve)
-     */
     private function logActivity(Ticket $ticket, string $oldStatus, ?int $oldPersonnel)
     {
         $userId = Auth::user()?->id;
@@ -288,9 +309,6 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * 🔔 Ticket Notifications
-     */
     private function handleTicketUpdateNotifications(Ticket $ticket)
     {
         $users = Cache::remember('it_users', now()->addMinutes(2), fn() => User::all());
@@ -304,17 +322,11 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * 🧠 Detect if Gmail is real
-     */
     private function detectRealGmail(?string $email): bool
     {
         return $email && preg_match('/^[a-z0-9._%+-]+@gmail\.com$/', strtolower(trim($email)));
     }
 
-    /**
-     * 🧩 Cached Resolvers
-     */
     private static $cache = ['agent' => [], 'leader' => [], 'component' => []];
 
     private function resolveAgent(string $name, ?string $email = null)
@@ -352,14 +364,27 @@ class TicketController extends Controller
         return "{$slug}.{$random}@gmail.com";
     }
 
-    /**
-     * 🔍 AJAX Check if Ticket Exists
-     */
     public function check(Request $request)
     {
         $ticketNumber = $request->query('ticket_number');
         $exists = Ticket::where('ticket_number', $ticketNumber)->exists();
 
         return response()->json(['exists' => $exists]);
+    }
+
+    /**
+     * 🎛️ Ticket Panels (Public Display)
+     */
+    public function panels()
+    {
+        $pendingTickets = Ticket::where('status', 'pending')->latest()->get();
+        $inProgressTickets = Ticket::where('status', 'in_progress')->latest()->get();
+        $resolvedTickets = Ticket::where('status', 'resolved')->latest()->get();
+
+        return view('tickets.panels', compact(
+            'pendingTickets', 
+            'inProgressTickets', 
+            'resolvedTickets'
+        ));
     }
 }

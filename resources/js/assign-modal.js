@@ -1,101 +1,224 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const assignForm = document.getElementById('assignForm');
-    const closeBtn = document.getElementById('closeAssignModal');
-    const assignModal = document.getElementById('assignModal');
+/**
+ * Assign Modal JavaScript
+ * Handles modal functionality for ticket assignment
+ * Designed to work with DashboardManager
+ */
 
-    if (!assignForm) return;
+class AssignModalHandler {
+    constructor() {
+        this.modal = null;
+        this.container = null;
+        this.isInitialized = false;
+    }
 
-    // ✅ Handle form submit via AJAX
-    assignForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    /**
+     * Initialize modal with loaded content
+     */
+    init(modalContainer) {
+        if (this.isInitialized) {
+            this.cleanup();
+        }
 
-        const formData = new FormData(assignForm);
-        const ticketId = formData.get('ticket_id');
-        const url = `/tickets/${ticketId}`; // ✅ Standard RESTful route
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        this.container = modalContainer;
+        this.modal = document.getElementById('assignModal');
+        
+        if (!this.container || !this.modal) {
+            console.warn('Assign modal elements not found');
+            return;
+        }
 
+        this.bindEvents();
+        this.isInitialized = true;
+    }
+
+    /**
+     * Bind modal events
+     */
+    bindEvents() {
+        // Close modal buttons
+        this.container.querySelectorAll('.closeAssignModal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.close();
+            });
+        });
+
+        // Form submission
+        const form = this.container.querySelector('#assignForm');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.handleFormSubmit(form);
+            });
+        }
+
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal && !this.modal.classList.contains('hidden')) {
+                this.close();
+            }
+        });
+    }
+
+    /**
+     * Handle form submission
+     */
+    async handleFormSubmit(form) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+
+        // Show loading state
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Saving...
+                </div>`;
+        }
+
+        const formData = new FormData(form);
+        
         try {
-            const response = await fetch(url, {
-                method: 'POST', // Laravel accepts POST for update with _method override
+            const res = await fetch(form.action, {
+                method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: formData
             });
 
-            const result = await response.json().catch(() => null);
+            const data = await res.json();
 
-            if (response.ok) {
-                console.log('✅ Ticket updated successfully:', result);
-                closeAssignModal();
-
-                // ✅ Refresh only panels and stats (not full page)
-                await refreshPanelsAndStats();
-
-                showToast('✅ Ticket updated successfully!');
-            } else {
-                console.error('❌ Update failed:', result);
-                showToast('⚠️ Failed to update ticket. Please try again.', true);
-            }
-        } catch (error) {
-            console.error('⚠️ AJAX error:', error);
-            showToast('⚠️ An unexpected error occurred.', true);
-        }
-    });
-
-    // ✅ Close modal handler
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeAssignModal);
-    }
-
-    function closeAssignModal() {
-        if (assignModal) assignModal.classList.add('hidden');
-    }
-
-    // ✅ Dynamically refresh ticket panels and stats
-    async function refreshPanelsAndStats() {
-        try {
-            const response = await fetch('/refresh');
-            const result = await response.json();
-
-            if (result.success) {
-                const dashboard = document.getElementById('dashboard-panels');
-                const statsContainer = document.getElementById('stats-container');
-
-                if (dashboard) dashboard.innerHTML = result.html;
-                if (statsContainer && result.stats) {
-                    statsContainer.innerHTML = `
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-blue-100 p-4 rounded-xl text-center shadow">
-                                <h3 class="text-lg font-bold">Pending</h3>
-                                <p class="text-2xl">${result.stats.pending}</p>
-                            </div>
-                            <div class="bg-yellow-100 p-4 rounded-xl text-center shadow">
-                                <h3 class="text-lg font-bold">In Progress</h3>
-                                <p class="text-2xl">${result.stats.in_progress}</p>
-                            </div>
-                            <div class="bg-green-100 p-4 rounded-xl text-center shadow">
-                                <h3 class="text-lg font-bold">Resolved</h3>
-                                <p class="text-2xl">${result.stats.resolved}</p>
-                            </div>
-                        </div>
-                    `;
+            if (res.ok && data.success) {
+                this.showToast('✅ Ticket updated successfully!');
+                this.close();
+                
+                // Refresh dashboard if available
+                if (window.dashboard && typeof window.dashboard.refreshDashboard === 'function') {
+                    await window.dashboard.refreshDashboard();
+                } else {
+                    // Fallback refresh
+                    window.location.reload();
                 }
+            } else {
+                throw new Error(data.message || Object.values(data.errors || {}).join(', ') || 'Update failed');
             }
-        } catch (error) {
-            console.error('⚠️ Failed to refresh panels:', error);
+        } catch (err) {
+            console.error('❌ Ticket update error:', err);
+            this.showToast(err.message || '⚠️ Failed to update ticket', true);
+        } finally {
+            // Restore button state
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         }
     }
 
-    // ✅ Toast Notification
-    function showToast(message, isError = false) {
+    /**
+     * Close modal
+     */
+    close() {
+        if (this.modal) {
+            this.modal.classList.add('hidden');
+            this.modal.classList.remove('flex');
+            
+            // Clear container content but keep the structure
+            if (this.container) {
+                this.container.innerHTML = `
+                    <div class="flex justify-center items-center min-h-[200px]">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>`;
+            }
+        }
+        this.cleanup();
+    }
+
+    /**
+     * Cleanup event listeners
+     */
+    cleanup() {
+        // Remove event listeners to prevent duplicates
+        if (this.container) {
+            const newContainer = this.container.cloneNode(false);
+            this.container.parentNode.replaceChild(newContainer, this.container);
+            this.container = newContainer;
+        }
+        this.isInitialized = false;
+    }
+
+    /**
+     * Show toast notification
+     */
+    showToast(message, isError = false) {
+        // Use dashboard's toast if available
+        if (window.dashboard && typeof window.dashboard.showToast === 'function') {
+            window.dashboard.showToast(message, isError ? 'error' : 'success');
+            return;
+        }
+
+        // Fallback toast implementation
         const toast = document.createElement('div');
         toast.textContent = message;
-        toast.className = `fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white text-sm transition-opacity duration-300 ${
-            isError ? 'bg-red-500' : 'bg-green-600'
-        }`;
+        toast.className = `
+            fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white text-sm
+            transition-all duration-300 z-[9999] font-medium
+            ${isError ? 'bg-red-500' : 'bg-green-600'}
+        `;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+
+        setTimeout(() => {
+            toast.style.opacity = '1';
+        }, 10);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 300);
+        }, 3000);
+    }
+}
+
+// Global instance
+window.assignModalHandler = new AssignModalHandler();
+
+/**
+ * Initialize assign modal when content is loaded
+ * This is called by DashboardManager after loading modal content
+ */
+function initAssignModal() {
+    const modalContainer = document.getElementById('assignFormContainer');
+    if (modalContainer) {
+        window.assignModalHandler.init(modalContainer);
+    }
+}
+
+/**
+ * Fallback initialization for direct modal usage
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize if we're on a page with the modal container
+    const modalContainer = document.getElementById('assignFormContainer');
+    const modal = document.getElementById('assignModal');
+    
+    if (modalContainer && modal && modalContainer.children.length > 0) {
+        // Check if content is already loaded (direct page access)
+        const hasContent = modalContainer.querySelector('#assignForm') || 
+                          modalContainer.textContent.trim().length > 100;
+        
+        if (hasContent) {
+            window.assignModalHandler.init(modalContainer);
+        }
     }
 });
+
+// Export for ES modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { AssignModalHandler, initAssignModal };
+}

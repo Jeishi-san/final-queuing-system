@@ -1,7 +1,36 @@
 {{-- ✅ Ticket Statistics Overview --}}
 <div id="statsPanel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     @php
-        $totalTickets = collect($stats)->sum('count');
+        $totalTickets = $stats['total'] ?? 0;
+        
+        // Define stats in the expected format for the blade template
+        $formattedStats = [
+            [
+                'label' => 'Pending',
+                'count' => $stats['pending'] ?? 0,
+                'color' => 'yellow',
+                'icon' => '⏳'
+            ],
+            [
+                'label' => 'In Progress', 
+                'count' => $stats['in_progress'] ?? 0,
+                'color' => 'blue',
+                'icon' => '🔄'
+            ],
+            [
+                'label' => 'Resolved',
+                'count' => $stats['resolved'] ?? 0, 
+                'color' => 'green',
+                'icon' => '✅'
+            ],
+            [
+                'label' => 'Overdue',
+                'count' => $stats['overdue'] ?? 0,
+                'color' => 'red', 
+                'icon' => '⚠️'
+            ]
+        ];
+        
         $colorClasses = [
             'Pending' => 'yellow',
             'In Progress' => 'blue',
@@ -10,18 +39,35 @@
         ];
     @endphp
 
-    @foreach ($stats as $stat)
+    @foreach ($formattedStats as $stat)
         @php
             $label = $stat['label'];
             $count = $stat['count'];
-            $color = $colorClasses[$label] ?? 'gray';
-            $icon = $stat['icon'] ?? '';
+            $color = $stat['color'];
+            $icon = $stat['icon'];
             $percentage = $totalTickets > 0 ? round(($count / $totalTickets) * 100) : 0;
 
-            // Tailwind-safe classes for dynamic colors
-            $bgLight = "bg-{$color}-100 dark:bg-{$color}-900/30";
-            $bg = "bg-{$color}-500";
-            $textHover = "group-hover:text-{$color}-600 dark:group-hover:text-{$color}-400";
+            // Safe color classes - using static classes instead of dynamic strings
+            $bgLight = [
+                'yellow' => 'bg-yellow-100 dark:bg-yellow-900/30',
+                'blue' => 'bg-blue-100 dark:bg-blue-900/30', 
+                'green' => 'bg-green-100 dark:bg-green-900/30',
+                'red' => 'bg-red-100 dark:bg-red-900/30'
+            ][$color] ?? 'bg-gray-100 dark:bg-gray-900/30';
+            
+            $bgColor = [
+                'yellow' => 'bg-yellow-500',
+                'blue' => 'bg-blue-500',
+                'green' => 'bg-green-500', 
+                'red' => 'bg-red-500'
+            ][$color] ?? 'bg-gray-500';
+            
+            $textHover = [
+                'yellow' => 'group-hover:text-yellow-600 dark:group-hover:text-yellow-400',
+                'blue' => 'group-hover:text-blue-600 dark:group-hover:text-blue-400',
+                'green' => 'group-hover:text-green-600 dark:group-hover:text-green-400',
+                'red' => 'group-hover:text-red-600 dark:group-hover:text-red-400'
+            ][$color] ?? 'group-hover:text-gray-600 dark:group-hover:text-gray-400';
         @endphp
 
         <div class="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 
@@ -30,7 +76,7 @@
 
             {{-- Background Gradient --}}
             <div class="absolute inset-0 opacity-5">
-                <div class="{{ $bg }} rounded-2xl"></div>
+                <div class="{{ $bgColor }} rounded-2xl"></div>
             </div>
 
             {{-- Icon + Label --}}
@@ -56,7 +102,7 @@
 
             {{-- Progress Bar --}}
             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2 overflow-hidden relative z-10" aria-label="{{ $label }} progress bar">
-                <div class="{{ $bg }} h-2 rounded-full transition-all duration-1000 ease-out" style="width: {{ $percentage }}%"></div>
+                <div class="{{ $bgColor }} h-2 rounded-full transition-all duration-1000 ease-out" style="width: {{ $percentage }}%"></div>
             </div>
 
             {{-- Description --}}

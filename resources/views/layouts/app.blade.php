@@ -11,7 +11,7 @@
 
     {{-- Extra styles (per-view injection) --}}
     @stack('styles')
-</head>
+</head> 
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
     {{-- Navbar (pulled in from navigation.blade.php) --}}
