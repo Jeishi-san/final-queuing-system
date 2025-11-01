@@ -100,11 +100,11 @@
         </table>
     </div>
 
-    {{-- ✅ Pagination with corrected path --}}
+    {{-- ✅ Fixed Pagination --}}
     @if($tickets instanceof \Illuminate\Pagination\LengthAwarePaginator)
         <div class="mt-4 flex justify-center">
             <div class="pagination">
-                {!! $tickets->appends(request()->query())->setPath(route('dashboard.ticketsTable'))->links() !!}
+                {!! $tickets->withQueryString()->links() !!}
             </div>
         </div>
     @endif

@@ -17,12 +17,31 @@ class DashboardManager {
         this.refreshBtn = document.getElementById('refreshDashboardBtn');
         this.applyFiltersBtn = document.getElementById('applyFiltersBtn');
         this.clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        
+        this.currentPage = 1;
+        this.currentFilters = new URLSearchParams();
 
         this.init();
     }
 
     init() {
         this.bindEvents();
+        this.loadCurrentState();
+    }
+
+    loadCurrentState() {
+        // Get current page and filters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        this.currentPage = urlParams.get('page') || 1;
+        this.currentFilters = new URLSearchParams();
+        
+        // Store current filter values (EXCLUDE page parameter from filters)
+        ['search', 'status', 'it_personnel_id'].forEach(param => {
+            const value = urlParams.get(param);
+            if (value) this.currentFilters.set(param, value);
+        });
+
+        console.log('Loaded state - Page:', this.currentPage, 'Filters:', Object.fromEntries(this.currentFilters));
     }
 
     bindEvents() {
@@ -38,11 +57,13 @@ class DashboardManager {
         // Filters submit
         this.filters?.addEventListener('submit', e => {
             e.preventDefault();
+            this.currentPage = 1; // Reset to first page on new search
             this.refreshDashboard();
         });
 
         this.extraFilters?.addEventListener('submit', e => {
             e.preventDefault();
+            this.currentPage = 1; // Reset to first page on new filter
             this.refreshDashboard();
         });
 
@@ -56,8 +77,10 @@ class DashboardManager {
         ['statusFilter', 'itPersonnelFilter'].forEach(id => {
             const el = document.getElementById(id);
             el?.addEventListener('change', () => {
-                if (!document.activeElement.isEqualNode(this.applyFiltersBtn))
+                if (!document.activeElement.isEqualNode(this.applyFiltersBtn)) {
+                    this.currentPage = 1; // Reset to first page on filter change
                     this.refreshDashboard();
+                }
             });
         });
 
@@ -71,27 +94,20 @@ class DashboardManager {
             }
         });
 
-        // ✅ FIXED: Pagination with URL correction
+        // ✅ FIXED: Pagination with preserved state
         document.addEventListener('click', e => {
             const link = e.target.closest('#ticketTableContainer .pagination a');
             if (link) {
                 e.preventDefault();
                 
-                // ✅ FIXED: Convert dashboard URL to tickets-table URL
-                const originalUrl = new URL(link.href);
-                let correctedUrl;
+                // Extract page number from the clicked link
+                const url = new URL(link.href);
+                const page = url.searchParams.get('page') || '1';
+                this.currentPage = page;
                 
-                if (originalUrl.pathname === '/dashboard') {
-                    // Convert /dashboard?page=2 to /dashboard/tickets-table?page=2
-                    correctedUrl = `/dashboard/tickets-table${originalUrl.search}`;
-                } else {
-                    correctedUrl = link.href;
-                }
+                console.log('Pagination - Navigating to page:', this.currentPage);
                 
-                console.log('Pagination - Original URL:', link.href);
-                console.log('Pagination - Corrected URL:', correctedUrl);
-                
-                this.refreshDashboard(correctedUrl);
+                this.refreshDashboard();
             }
         });
 
@@ -104,57 +120,95 @@ class DashboardManager {
     }
 
     // Refresh the dashboard table + stats panels
-    async refreshDashboard(url = null) {
+    async refreshDashboard() {
         try {
-            const params = new URLSearchParams(new FormData(this.filters || document.createElement('form')));
+            // Build URL with current filters and page
+            const params = new URLSearchParams();
+            
+            // Add current filters (EXCLUDE page from filters)
+            this.currentFilters.forEach((value, key) => {
+                if (key !== 'page' && value) {
+                    params.set(key, value);
+                }
+            });
+            
+            // ✅ FIXED: Always use currentPage for pagination
+            if (this.currentPage && this.currentPage !== '1') {
+                params.set('page', this.currentPage);
+            }
+            
+            // ✅ FIXED: Get form values WITHOUT overwriting currentPage
+            const formParams = new URLSearchParams(new FormData(this.filters || document.createElement('form')));
             const extraParams = new URLSearchParams(new FormData(this.extraFilters || document.createElement('form')));
-            const allParams = new URLSearchParams(params.toString() + '&' + extraParams.toString());
+            
+            // ✅ FIXED: Merge form params but EXCLUDE page parameter
+            formParams.forEach((value, key) => {
+                if (key !== 'page' && value) {
+                    params.set(key, value);
+                    this.currentFilters.set(key, value);
+                } else if (key !== 'page' && !value) {
+                    params.delete(key);
+                    this.currentFilters.delete(key);
+                }
+            });
+            
+            extraParams.forEach((value, key) => {
+                if (key !== 'page' && value) {
+                    params.set(key, value);
+                    this.currentFilters.set(key, value);
+                } else if (key !== 'page' && !value) {
+                    params.delete(key);
+                    this.currentFilters.delete(key);
+                }
+            });
 
-            // ✅ FIXED: Use the provided URL directly for pagination, otherwise build URL
-            const tableUrl = url || `/dashboard/tickets-table?${allParams.toString()}`;
-            const statsUrl = `/dashboard/tickets-stats?${allParams.toString()}`;
+            const tableUrl = `/dashboard/tickets-table?${params.toString()}`;
+            const statsUrl = `/dashboard/tickets-stats?${params.toString()}`;
 
             console.log('Refresh - Table URL:', tableUrl);
+            console.log('Refresh - Current Page:', this.currentPage);
+            console.log('Refresh - Current Filters:', Object.fromEntries(this.currentFilters));
             
             this.tableContainer?.classList.add('opacity-50', 'pointer-events-none');
 
-            // ✅ FIXED: Only fetch stats if we're not doing pagination
-            const promises = [fetch(tableUrl, { 
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' } 
-            })];
-
-            // Only update stats on filter changes, not pagination
-            if (!url) {
-                promises.push(fetch(statsUrl, { 
+            // Fetch both table and stats
+            const [tableRes, statsRes] = await Promise.all([
+                fetch(tableUrl, { 
                     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' } 
-                }));
-            }
+                }),
+                fetch(statsUrl, { 
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' } 
+                })
+            ]);
 
-            const [tableRes, statsRes] = await Promise.all(promises);
-
-            // Update table
-            if (tableRes.ok) {
-                const html = await tableRes.text();
-                this.tableContainer.innerHTML = html;
-                
-                // Rebind assign buttons after table refresh
-                this.rebindAssignButtons();
-            } else {
+            if (!tableRes.ok) {
                 throw new Error(`Table fetch failed: ${tableRes.status}`);
             }
 
-            // Update stats only if we fetched them
-            if (statsRes && statsRes.ok) {
-                const html = await statsRes.text();
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = html.trim();
-                const newStats = wrapper.querySelector('#statsPanel');
-                if (newStats && this.statsPanel) {
-                    this.statsPanel.replaceWith(newStats);
-                    this.statsPanel = newStats;
-                }
+            if (!statsRes.ok) {
+                throw new Error(`Stats fetch failed: ${statsRes.status}`);
             }
 
+            // Update table
+            const tableHtml = await tableRes.text();
+            this.tableContainer.innerHTML = tableHtml;
+            
+            // Rebind assign buttons after table refresh
+            this.rebindAssignButtons();
+
+            // Update stats
+            const statsHtml = await statsRes.text();
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = statsHtml.trim();
+            const newStats = wrapper.querySelector('#statsPanel');
+            if (newStats && this.statsPanel) {
+                this.statsPanel.replaceWith(newStats);
+                this.statsPanel = newStats;
+            }
+
+            // ✅ FIXED: Update browser URL with correct page
+            this.updateBrowserUrl(params.toString());
+            
             this.showToast('✅ Dashboard updated');
         } catch (err) {
             console.error('❌ Dashboard refresh error:', err);
@@ -162,6 +216,13 @@ class DashboardManager {
         } finally {
             this.tableContainer?.classList.remove('opacity-50', 'pointer-events-none');
         }
+    }
+
+    // Update browser URL without page reload
+    updateBrowserUrl(params) {
+        const newUrl = params ? `${window.location.pathname}?${params}` : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+        console.log('URL updated to:', newUrl);
     }
 
     // Rebind assign buttons after table refresh
@@ -274,7 +335,7 @@ class DashboardManager {
         }
     }
 
-    // Handle Assign Form submission
+    // Handle Assign Form submission - FIXED for route issue
     async handleAssignFormSubmit(form) {
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn ? submitBtn.innerHTML : '';
@@ -289,31 +350,91 @@ class DashboardManager {
                 </div>`;
         }
 
-        const formData = new FormData(form);
-        
         try {
-            const res = await fetch(form.action, {
-                method: 'POST',
+            const formData = new FormData(form);
+            const ticketId = formData.get('ticket_id');
+            
+            if (!ticketId) {
+                throw new Error('Ticket ID is required');
+            }
+
+            // Build update data - REMOVED _method since we're using POST directly
+            const updateData = {
+                it_personnel_id: formData.get('it_personnel_id') || null,
+                status: formData.get('status'),
+                component_id: formData.get('component_id') || null
+            };
+
+            // Validate status according to your controller
+            const validStatuses = ['pending', 'in_progress', 'resolved', 'overdue', 'cancelled'];
+            if (!validStatuses.includes(updateData.status)) {
+                throw new Error(`Invalid status: "${updateData.status}". Must be one of: ${validStatuses.join(', ')}`);
+            }
+
+            console.log('📤 Sending ticket update:', updateData);
+
+            // Use POST method directly (no _method needed)
+            const res = await fetch(`/tickets/${ticketId}`, {
+                method: 'POST', // Use POST method directly
                 headers: {
+                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: formData
+                body: JSON.stringify(updateData)
             });
+
+            // Check if response is JSON
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                console.error('Non-JSON response:', text);
+                throw new Error('Server returned non-JSON response. Please try again.');
+            }
 
             const data = await res.json();
 
-            if (res.ok && data.success) {
+            if (!res.ok) {
+                // Handle validation errors
+                if (data.errors) {
+                    const errorMessages = Object.values(data.errors).flat().join(', ');
+                    throw new Error(errorMessages);
+                }
+                throw new Error(data.message || `HTTP error! status: ${res.status}`);
+            }
+
+            if (data.success) {
                 this.showToast('✅ Ticket updated successfully');
                 this.closeModal();
                 await this.refreshDashboard();
             } else {
-                throw new Error(data.message || Object.values(data.errors || {}).join(', ') || 'Update failed');
+                throw new Error(data.message || 'Update failed without error');
             }
+
         } catch (err) {
             console.error('❌ Ticket update error:', err);
-            this.showToast(err.message || '⚠️ Failed to update ticket', 'error');
+            
+            // More specific error messages for common issues
+            let userMessage = err.message;
+            if (err.message.includes('Failed to fetch')) {
+                userMessage = 'Network error. Please check your connection and try again.';
+            } else if (err.message.includes('CSRF token')) {
+                userMessage = 'Session expired. Please refresh the page and try again.';
+            } else if (err.message.includes('500') || err.message.includes('Internal Server Error')) {
+                userMessage = 'Server error. Please try again in a moment.';
+            } else if (err.message.includes('PUT method is not supported')) {
+                userMessage = 'Server configuration error. Please contact administrator.';
+            } else if (err.message.includes('405') || err.message.includes('Method Not Allowed')) {
+                userMessage = 'Action not allowed. Please refresh the page and try again.';
+            }
+
+            this.showToast(userMessage, 'error');
+            
+            // Log detailed error for debugging
+            if (!userMessage.includes('Network error') && !userMessage.includes('Session expired')) {
+                console.debug('Detailed error:', err);
+            }
         } finally {
             // Restore button state
             if (submitBtn) {

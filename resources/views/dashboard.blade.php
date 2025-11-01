@@ -5,7 +5,7 @@
 
     {{-- 📈 Stats Overview --}}
     @if(isset($stats))
-    <div id="statsPanel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div id="statsPanel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Total Tickets">
             <h2 class="text-gray-500 dark:text-gray-400 text-sm">Total Tickets</h2>
             <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ $stats['total'] ?? 0 }}</p>
@@ -21,6 +21,11 @@
         <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Overdue">
             <h2 class="text-gray-500 dark:text-gray-400 text-sm">Overdue</h2>
             <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ $stats['overdue'] ?? 0 }}</p>
+        </div>
+        {{-- ✅ NEW: Assigned to Me Stat --}}
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-5" data-stat-type="Assigned to Me">
+            <h2 class="text-gray-500 dark:text-gray-400 text-sm">Assigned to Me</h2>
+            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $assignedTicketsCount ?? 0 }}</p>
         </div>
     </div>
     @endif

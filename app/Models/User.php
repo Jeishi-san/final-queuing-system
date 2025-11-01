@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -21,7 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        // 'role', // Uncomment if you use roles (e.g., 'it', 'agent', 'admin')
+        'profile_picture', // ✅ Added for profile image support
+        // 'role', // Uncomment if you use roles (e.g., 'admin', 'it', 'agent')
     ];
 
     /**
@@ -61,6 +63,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Tickets created/reported by this user.
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class, 'user_id');
+    }
+
+    /**
      * Tickets assigned to this user (as IT personnel).
      */
     public function assignedTickets(): HasMany
@@ -69,14 +79,8 @@ class User extends Authenticatable
     }
 
     /* ============================================================
-     |  Notifications (provided by Notifiable trait)
+     |  Notifications (from Notifiable trait)
      |============================================================
-     |
-     | The Notifiable trait already defines:
-     | - $this->notifications()
-     | - $this->unreadNotifications()
-     |
-     | But we can define helper methods to simplify access.
      */
 
     /**
@@ -102,15 +106,36 @@ class User extends Authenticatable
 
     /**
      * Determine if the user is an IT personnel.
-     * 
-     * @return bool
      */
     public function isITPersonnel(): bool
     {
         // Example with roles:
         // return $this->role === 'it';
 
-        // Or dynamic check based on assignments:
+        // Dynamic check based on assigned tickets
         return $this->assignedTickets()->exists();
+    }
+
+    /**
+     * ✅ Get the full URL of the user's profile picture.
+     */
+    public function profileImageUrl(): string
+    {
+        if ($this->profile_picture && Storage::disk('public')->exists($this->profile_picture)) {
+            return asset('storage/' . $this->profile_picture);
+        }
+
+        // Default fallback image
+        return asset('images/default-avatar.png');
+    }
+
+    /**
+     * ✅ Delete old profile picture from storage.
+     */
+    public function deleteProfileImage(): void
+    {
+        if ($this->profile_picture && Storage::disk('public')->exists($this->profile_picture)) {
+            Storage::disk('public')->delete($this->profile_picture);
+        }
     }
 }

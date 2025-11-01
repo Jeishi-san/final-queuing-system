@@ -1,9 +1,5 @@
 {{-- resources/views/tickets/assign.blade.php --}}
-{{-- REMOVE the outer modal div - just return the content --}}
-
 <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full relative">
-
-    {{-- 🔘 Close Button --}}
 
     {{-- 📝 Header --}}
     <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
@@ -54,9 +50,9 @@
             </div>
 
             <div>
-                <strong class="text-gray-700 dark:text-gray-300">Assigned User:</strong>
-                <span class="ml-2 {{ $ticket->user ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                    {{ $ticket->user->name ?? 'Unassigned' }}
+                <strong class="text-gray-700 dark:text-gray-300">Assigned IT Personnel:</strong>
+                <span class="ml-2 {{ $ticket->itPersonnel ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                    {{ $ticket->itPersonnel->name ?? 'Unassigned' }}
                 </span>
             </div>
 
@@ -70,7 +66,6 @@
     {{-- 🧾 Update Form --}}
     <form id="assignForm" method="POST" action="{{ route('tickets.update', $ticket->id) }}">
         @csrf
-        @method('PATCH')
         <input type="hidden" name="ticket_id" value="{{ $ticket->id }}">
 
         {{-- Status --}}
@@ -81,25 +76,25 @@
             <select id="status" name="status"
                 class="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 
                 bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 
-                focus:border-transparent transition-colors">
+                focus:border-transparent transition-colors" required>
                 <option value="pending"     {{ $ticket->status === 'pending' ? 'selected' : '' }}>⏳ Pending</option>
                 <option value="in_progress" {{ $ticket->status === 'in_progress' ? 'selected' : '' }}>🔄 In Progress</option>
-                <option value="resolved"    {{ $ticket->status === 'resolved' ? 'selected' : '' }}>✅ Resolved</option>
+                <option value="resolved"    {{ $ticket->status === 'resolved' ? 'selected' : '' }}>✅ Resolved</option> 
             </select>
         </div>
 
-        {{-- User Assignment --}}
-        <div class="mb-6">
-            <label for="user_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Assign User
+        {{-- IT Personnel Assignment --}}
+        <div class="mb-4">
+            <label for="it_personnel_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Assign IT Personnel
             </label>
-            <select id="user_id" name="user_id"
+            <select id="it_personnel_id" name="it_personnel_id"
                 class="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 
                 bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 
                 focus:border-transparent transition-colors">
-                <option value="">-- Select User --</option>
+                <option value="">-- Unassigned --</option>
                 @foreach($users as $user)
-                    <option value="{{ $user->id }}" {{ $ticket->user_id == $user->id ? 'selected' : '' }}>
+                    <option value="{{ $user->id }}" {{ $ticket->it_personnel_id == $user->id ? 'selected' : '' }}>
                         {{ $user->name }} ({{ $user->email }})
                     </option>
                 @endforeach
@@ -124,4 +119,6 @@
     </form>
 </div>
 
-{{-- REMOVE the Vite include - it's not needed in the partial --}}
+@push('scripts')
+@vite('resources/js/assign-modal.js')
+@endpush

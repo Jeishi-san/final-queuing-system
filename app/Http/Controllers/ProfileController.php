@@ -11,15 +11,26 @@ use App\Models\Ticket;
 class ProfileController extends Controller
 {
     /**
-     * Show the logged-in user's profile with their activity logs.
+     * ✅ Show the logged-in user's profile with activity logs and ticket stats.
      */
     public function profile(Request $request): View
     {
-        $user = $request->user();
+        $user = Auth::user();
 
         if (!$user) {
             abort(401, 'Unauthorized');
         }
+
+        // ✅ Ticket statistics (only tickets assigned to this user)
+        $ticketStats = [
+            'total' => Ticket::where('it_personnel_id', $user->id)->count(),
+            'pending' => Ticket::where('it_personnel_id', $user->id)
+                ->where('status', 'Pending')->count(),
+            'in_progress' => Ticket::where('it_personnel_id', $user->id)
+                ->where('status', 'In Progress')->count(),
+            'resolved' => Ticket::where('it_personnel_id', $user->id)
+                ->whereIn('status', ['Resolved', 'Closed'])->count(),
+        ];
 
         $itPersonnelRelation = 'itPersonnel';
 
@@ -41,12 +52,14 @@ class ProfileController extends Controller
                 },
             ])
             ->where('user_id', $user->id)
+            ->when($request->search, fn($q, $v) => $q->where('action', 'like', "%$v%"))
             ->orderByRaw('COALESCE(performed_at, created_at) DESC')
             ->paginate($request->get('per_page', 10));
 
         return view('profile.profile', [
             'user' => $user,
             'logs' => $logs,
+            'ticketStats' => $ticketStats,
         ]);
     }
 
@@ -55,9 +68,11 @@ class ProfileController extends Controller
      */
     public function logAssignment(int $ticketId, Request $request): void
     {
-        $user = $request->user();
+        $user = Auth::user();
 
-        if (!$user) return;
+        if (!$user) {
+            return;
+        }
 
         $ticket = Ticket::find($ticketId);
 
@@ -76,9 +91,11 @@ class ProfileController extends Controller
      */
     public function logUpdate(int $ticketId, Request $request): void
     {
-        $user = $request->user();
+        $user = Auth::user();
 
-        if (!$user) return;
+        if (!$user) {
+            return;
+        }
 
         $ticket = Ticket::find($ticketId);
 
@@ -90,5 +107,41 @@ class ProfileController extends Controller
                 'performed_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * ✅ Show the profile edit form.
+     */
+    public function edit(): View
+    {
+        $user = Auth::user();
+
+        return view('profile.edit', ['user' => $user]);
+    }
+
+    /**
+     * ✅ Update the user's profile information.
+     */
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'profile_picture' => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        // 🖼️ Handle image upload
+        if ($request->hasFile('profile_picture')) {
+            $imagePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $validated['profile_picture'] = $imagePath;
+        }
+
+        $user->update($validated);
+
+        return redirect()
+            ->route('profile.edit')
+            ->with('success', 'Profile updated successfully!');
     }
 }

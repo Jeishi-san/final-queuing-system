@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable; // ✅ Add this
 
 class TeamLeader extends Model
 {
+    use Notifiable; // ✅ Add this trait
+
     protected $fillable = [
         'name',
         'email',          // ✅ added so you can mass assign email
@@ -34,5 +37,14 @@ class TeamLeader extends Model
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    /**
+     * Route notifications for the mail channel.
+     * This tells Laravel where to send email notifications.
+     */
+    public function routeNotificationForMail()
+    {
+        return $this->email;
     }
 }

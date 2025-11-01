@@ -1,6 +1,8 @@
-<?php
+<?php 
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\NotificationController;
@@ -31,44 +33,77 @@ Route::middleware(['auth', 'verified'])->group(function () {
     |--------------------------------------------------------------------------
     | 📊 Dashboard (Main View + AJAX Partials)
     |--------------------------------------------------------------------------
-    | Main dashboard view loads once. AJAX calls fetch tables/stats separately.
     */
     Route::get('/dashboard', [TicketController::class, 'dashboard'])->name('dashboard');
-
-    // ✅ AJAX: Tickets Table Partial (for live search/pagination)
-    Route::get('/dashboard/tickets-table', [TicketController::class, 'ticketsTable'])
-        ->name('dashboard.ticketsTable');
-
-    // ✅ AJAX: Dashboard Stats Partial
-    Route::get('/dashboard/tickets-stats', [TicketController::class, 'ticketsStats'])
-        ->name('dashboard.ticketsStats');
+    Route::get('/dashboard/tickets-table', [TicketController::class, 'ticketsTable'])->name('dashboard.ticketsTable');
+    Route::get('/dashboard/tickets-stats', [TicketController::class, 'ticketsStats'])->name('dashboard.ticketsStats');
 
     /*
     |--------------------------------------------------------------------------
-    | 🔔 Notifications
+    | 🎟 Ticket Management Routes
     |--------------------------------------------------------------------------
     */
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('/notifications/clear', [NotificationController::class, 'clear'])->name('notifications.clear');
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🎟 Ticket Assignment & Update
-    |--------------------------------------------------------------------------
-    */
-    // ✅ FIXED: Changed from modalAssign to assign to match JavaScript expectations
     Route::get('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
-    
-    // ✅ FIXED: Ensure this route exists for form submissions
-    Route::patch('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
+    Route::delete('/tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
 
     /*
     |--------------------------------------------------------------------------
-    | 👤 User Profile
+    | 🔔 Notification Routes
     |--------------------------------------------------------------------------
     */
-    Route::get('/profile', [ProfileController::class, 'profile'])->name('profile');
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+        Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsReadSingle'])->name('notifications.markAsReadSingle');
+        Route::delete('/clear', [NotificationController::class, 'clearAll'])->name('notifications.clearAll');
+        Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+        Route::get('/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
+        Route::get('/stats', [NotificationController::class, 'stats'])->name('notifications.stats');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🧪 Test Route: Notifications Debug
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/test-notifications-db', function () {
+        $user = Auth::user();
+
+        $notifications = DB::table('notifications')
+            ->where('notifiable_type', get_class($user))
+            ->where('notifiable_id', $user->id)
+            ->get();
+
+        return response()->json([
+            'user' => $user->only(['id', 'name', 'email']),
+            'notifications_count' => $notifications->count(),
+            'notifications' => $notifications->map(fn($n) => [
+                'id' => $n->id,
+                'type' => $n->type,
+                'data' => json_decode($n->data, true),
+                'read_at' => $n->read_at,
+                'created_at' => $n->created_at
+            ])
+        ]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 👤 User Profile Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('profile')->group(function () {
+        // ✅ Profile overview (with activity + stats)
+        Route::get('/', [ProfileController::class, 'profile'])->name('profile');
+
+        // ✅ Edit profile form (name + photo)
+        Route::get('/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+
+        // ✅ Update profile data (POST form submission)
+        Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
+    });
 });
 
 /*

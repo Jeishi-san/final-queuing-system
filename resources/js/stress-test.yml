@@ -1,0 +1,71 @@
+# stress-test.yml
+config:
+  target: "{{ $processEnv.TARGET_URL || 'http://127.0.0.1:8000' }}"
+  phases:
+    - duration: 60      # warm-up / steady period (seconds)
+      arrivalRate: 10   # new virtual users per second
+    - duration: 60
+      arrivalRate: 25   # increased load
+    - duration: 30
+      arrivalRate: 50   # spike (stress)
+  defaults:
+    http:
+      headers:
+        Accept: "application/json"
+        "Content-Type": "application/json"
+  processor: "./stress-helpers.js"  # optional helper JS file (see notes below)
+
+scenarios:
+  - name: "Public actions (create ticket -> read panels)"
+    flow:
+      - post:
+          url: "/tickets"
+          json:
+            ticket_number: "{{ uuid }}"
+            agent_name: "Load Tester {{ $timestamp }}"
+            agent_email: "loadtester+{{ $timestamp }}@example.com"
+            component_name: "Network"
+            issue_description: "Load test ticket created at {{ $now }}"
+          capture:
+            - json: "$.ticket.id"
+              as: "createdTicketId"
+      - get:
+          url: "/tickets/panels"
+      - think: 2
+
+  - name: "Authenticated actions (update ticket) - uses ARTILLERY_TOKEN"
+    flow:
+      - post:
+          url: "/tickets"
+          json:
+            ticket_number: "{{ uuid }}"
+            agent_name: "Auth Load {{ $timestamp }}"
+            agent_email: "authtester+{{ $timestamp }}@example.com"
+            component_name: "Printer"
+            issue_description: "Ticket to be updated by load test"
+          capture:
+            - json: "$.ticket.id"
+              as: "authCreatedTicketId"
+      - think: 0.5
+      - post:
+          url: "/tickets/{{ authCreatedTicketId }}"
+          headers:
+            Authorization: "Bearer {{ $processEnv.ARTILLERY_TOKEN }}"
+          json:
+            status: "in_progress"
+            it_personnel_id: "{{ $processEnv.TEST_IT_PERSONNEL_ID || '' }}"
+      - get:
+          url: "/dashboard"
+          headers:
+            Authorization: "Bearer {{ $processEnv.ARTILLERY_TOKEN }}"
+      - think: 1
+
+  - name: "Mixed read actions (dashboard panels + stats)"
+    flow:
+      - get:
+          url: "/tickets/panels"
+      - get:
+          url: "/dashboard/tickets-stats"
+          headers:
+            Authorization: "Bearer {{ $processEnv.ARTILLERY_TOKEN }}"
+      - think: 0.5

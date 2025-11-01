@@ -19,8 +19,21 @@
         @include('layouts.navigation')
     </header>
 
-    {{-- Main Content --}}
-    <main class="flex-grow container mx-auto p-6">
+    {{-- Main Content with responsive top padding --}}
+    <main class="flex-grow container mx-auto px-4 sm:px-6 py-6 mt-16"> {{-- ✅ mt-16 for navbar spacing --}}
+        {{-- Flash Messages --}}
+        @if(session('success'))
+            <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                {{ session('error') }}
+            </div>
+        @endif
+
         @yield('content')
     </main>
 
