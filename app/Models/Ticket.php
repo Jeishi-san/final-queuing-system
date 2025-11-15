@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ticket extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * ------------------------------------------------------
@@ -21,6 +21,11 @@ class Ticket extends Model
     const STATUS_IN_PROGRESS = 'in_progress';
     const STATUS_RESOLVED = 'resolved';
 
+    const PRIORITY_LOW = 'low';
+    const PRIORITY_MEDIUM = 'medium';
+    const PRIORITY_HIGH = 'high';
+    const PRIORITY_URGENT = 'urgent';
+
     /**
      * ------------------------------------------------------
      * Mass assignable attributes
@@ -28,12 +33,15 @@ class Ticket extends Model
      */
     protected $fillable = [
         'ticket_number',
+        'title',
         'issue_description',
         'status',
+        'priority',
+        'category',
         'agent_id',
-        'team_leader_id',
-        'it_personnel_id',   // assigned IT personnel
-        'component_id',      // primary component for quick display
+        'handled_by',       // IT user handling the ticket
+        'component_id',
+        'resolved_at',      // Added for resolution time tracking
     ];
 
     /**
@@ -44,6 +52,7 @@ class Ticket extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'resolved_at' => 'datetime',
     ];
 
     /**
@@ -53,6 +62,7 @@ class Ticket extends Model
      */
     protected $attributes = [
         'status' => self::STATUS_PENDING,
+        'priority' => self::PRIORITY_MEDIUM,
     ];
 
     /**
@@ -69,6 +79,18 @@ class Ticket extends Model
                 $ticket->ticket_number = self::generateTicketNumber();
             }
         });
+
+        static::updating(function ($ticket) {
+            // Automatically set resolved_at when status changes to resolved
+            if ($ticket->isDirty('status') && $ticket->status === self::STATUS_RESOLVED) {
+                $ticket->resolved_at = now();
+            }
+            
+            // Clear resolved_at when reopening a ticket
+            if ($ticket->isDirty('status') && $ticket->status !== self::STATUS_RESOLVED) {
+                $ticket->resolved_at = null;
+            }
+        });
     }
 
     /**
@@ -82,50 +104,23 @@ class Ticket extends Model
      */
     public function agent(): BelongsTo
     {
-        return $this->belongsTo(Agent::class)->withDefault();
-    }
-
-    /**
-     * Team leader associated with the agent
-     */
-    public function teamLeader(): BelongsTo
-    {
-        return $this->belongsTo(TeamLeader::class)->withDefault();
+        return $this->belongsTo(Agent::class);
     }
 
     /**
      * IT personnel assigned to handle the ticket
      */
-    public function itPersonnel(): BelongsTo
+    public function handledBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'it_personnel_id')->withDefault();
+        return $this->belongsTo(User::class, 'handled_by');
     }
 
     /**
-     * Primary Component (for quick display on dashboard)
+     * Primary Component
      */
     public function component(): BelongsTo
     {
-        return $this->belongsTo(Component::class)->withDefault();
-    }
-
-    /**
-     * Many-to-Many Components
-     * For tickets involving multiple components
-     */
-    public function components(): BelongsToMany
-    {
-        return $this->belongsToMany(Component::class, 'ticket_components')
-                    ->withPivot('quantity')
-                    ->withTimestamps();
-    }
-
-    /**
-     * Queue logs for ticket processing
-     */
-    public function queueLogs(): HasMany
-    {
-        return $this->hasMany(QueueLog::class);
+        return $this->belongsTo(Component::class);
     }
 
     /**
@@ -167,11 +162,11 @@ class Ticket extends Model
     }
 
     /**
-     * Scope for tickets assigned to specific IT personnel
+     * Scope for tickets handled by specific IT personnel
      */
-    public function scopeAssignedTo($query, $itPersonnelId)
+    public function scopeHandledBy($query, $userId)
     {
-        return $query->where('it_personnel_id', $itPersonnelId);
+        return $query->where('handled_by', $userId);
     }
 
     /**
@@ -179,23 +174,31 @@ class Ticket extends Model
      */
     public function scopeUnassigned($query)
     {
-        return $query->whereNull('it_personnel_id');
+        return $query->whereNull('handled_by');
     }
 
     /**
-     * Scope for tickets with primary component
+     * Scope by priority
      */
-    public function scopeWithComponents($query)
+    public function scopePriority($query, $priority)
     {
-        return $query->whereNotNull('component_id');
+        return $query->where('priority', $priority);
     }
 
     /**
-     * Scope for tickets with multiple components
+     * Scope by category
      */
-    public function scopeWithMultipleComponents($query)
+    public function scopeCategory($query, $category)
     {
-        return $query->whereHas('components');
+        return $query->where('category', $category);
+    }
+
+    /**
+     * Scope for tickets with resolution time data
+     */
+    public function scopeWithResolutionTime($query)
+    {
+        return $query->whereNotNull('resolved_at');
     }
 
     /**
@@ -209,7 +212,7 @@ class Ticket extends Model
      */
     public function getIsAssignedAttribute(): bool
     {
-        return !is_null($this->it_personnel_id);
+        return !is_null($this->handled_by);
     }
 
     /**
@@ -239,9 +242,9 @@ class Ticket extends Model
     /**
      * Get assigned IT personnel name
      */
-    public function getAssignedPersonnelNameAttribute(): string
+    public function getHandledByNameAttribute(): string
     {
-        return $this->itPersonnel ? $this->itPersonnel->name : 'Unassigned';
+        return $this->handledBy ? $this->handledBy->name : 'Unassigned';
     }
 
     /**
@@ -253,39 +256,38 @@ class Ticket extends Model
     }
 
     /**
-     * Get team leader name
+     * Get resolution time in minutes
      */
-    public function getTeamLeaderNameAttribute(): string
+    public function getResolutionTimeMinutesAttribute(): ?int
     {
-        return $this->teamLeader ? $this->teamLeader->name : 'N/A';
-    }
-
-    /**
-     * Get primary component name
-     */
-    public function getComponentNameAttribute(): string
-    {
-        return $this->component ? $this->component->name : 'No Component';
-    }
-
-    /**
-     * Get all component names (including multiple components)
-     */
-    public function getAllComponentNamesAttribute(): string
-    {
-        if ($this->components->isNotEmpty()) {
-            return $this->components->pluck('name')->join(', ');
+        if (!$this->resolved_at) {
+            return null;
         }
-        
-        return $this->component_name;
+
+        return $this->created_at->diffInMinutes($this->resolved_at);
     }
 
     /**
-     * Get the time since the ticket was created
+     * Get resolution time in human readable format
      */
-    public function getCreatedAtForHumansAttribute(): string
+    public function getResolutionTimeHumanAttribute(): ?string
     {
-        return $this->created_at->diffForHumans();
+        if (!$this->resolved_at) {
+            return null;
+        }
+
+        $minutes = $this->resolution_time_minutes;
+        
+        $days = floor($minutes / (24 * 60));
+        $hours = floor(($minutes % (24 * 60)) / 60);
+        $mins = $minutes % 60;
+
+        $parts = [];
+        if ($days > 0) $parts[] = $days . ' day' . ($days > 1 ? 's' : '');
+        if ($hours > 0) $parts[] = $hours . ' hour' . ($hours > 1 ? 's' : '');
+        if ($mins > 0) $parts[] = $mins . ' minute' . ($mins > 1 ? 's' : '');
+
+        return implode(', ', $parts) ?: '0 minutes';
     }
 
     /**
@@ -299,23 +301,19 @@ class Ticket extends Model
     }
 
     /**
-     * Check if ticket has multiple components
+     * Get the time since the ticket was created
      */
-    public function getHasMultipleComponentsAttribute(): bool
+    public function getCreatedAtForHumansAttribute(): string
     {
-        return $this->components->isNotEmpty();
+        return $this->created_at->diffForHumans();
     }
 
     /**
-     * Get total components count (primary + multiple)
+     * Get the time since the ticket was resolved
      */
-    public function getTotalComponentsCountAttribute(): int
+    public function getResolvedAtForHumansAttribute(): ?string
     {
-        $count = $this->components->count();
-        if ($this->component_id && !$this->components->contains('id', $this->component_id)) {
-            $count++;
-        }
-        return $count;
+        return $this->resolved_at ? $this->resolved_at->diffForHumans() : null;
     }
 
     /**
@@ -330,7 +328,7 @@ class Ticket extends Model
     public function assignTo(User $user): bool
     {
         return $this->update([
-            'it_personnel_id' => $user->id,
+            'handled_by' => $user->id,
             'status' => self::STATUS_IN_PROGRESS,
         ]);
     }
@@ -341,7 +339,7 @@ class Ticket extends Model
     public function unassign(): bool
     {
         return $this->update([
-            'it_personnel_id' => null,
+            'handled_by' => null,
             'status' => self::STATUS_PENDING,
         ]);
     }
@@ -357,6 +355,7 @@ class Ticket extends Model
         
         return $this->update([
             'status' => self::STATUS_RESOLVED,
+            'resolved_at' => now(),
         ]);
     }
 
@@ -377,33 +376,8 @@ class Ticket extends Model
     {
         return $this->update([
             'status' => self::STATUS_IN_PROGRESS,
+            'resolved_at' => null,
         ]);
-    }
-
-    /**
-     * Add multiple components to ticket
-     */
-    public function addComponent(Component $component, int $quantity = 1): void
-    {
-        $this->components()->syncWithoutDetaching([
-            $component->id => ['quantity' => $quantity]
-        ]);
-    }
-
-    /**
-     * Remove component from ticket
-     */
-    public function removeComponent(Component $component): void
-    {
-        $this->components()->detach($component->id);
-    }
-
-    /**
-     * Set primary component
-     */
-    public function setPrimaryComponent(Component $component): bool
-    {
-        return $this->update(['component_id' => $component->id]);
     }
 
     /**
@@ -423,19 +397,6 @@ class Ticket extends Model
     }
 
     /**
-     * Get ticket status with badge color
-     */
-    public function getStatusBadgeAttribute(): string
-    {
-        return match($this->status) {
-            self::STATUS_PENDING => '<span class="badge badge-warning">Pending</span>',
-            self::STATUS_IN_PROGRESS => '<span class="badge badge-info">In Progress</span>',
-            self::STATUS_RESOLVED => '<span class="badge badge-success">Resolved</span>',
-            default => '<span class="badge badge-secondary">' . ucfirst($this->status) . '</span>'
-        };
-    }
-
-    /**
      * ------------------------------------------------------
      * Static Methods
      * ------------------------------------------------------
@@ -452,7 +413,7 @@ class Ticket extends Model
         do {
             $random = strtoupper(substr(uniqid(), -6));
             $ticketNumber = "{$prefix}-{$date}-{$random}";
-        } while (self::where('ticket_number', $ticketNumber)->exists());
+        } while (self::where('ticket_number', $ticket_number)->exists());
         
         return $ticketNumber;
     }
@@ -468,7 +429,24 @@ class Ticket extends Model
             'in_progress' => self::inProgress()->count(),
             'resolved' => self::resolved()->count(),
             'unassigned' => self::unassigned()->count(),
-            'with_multiple_components' => self::withMultipleComponents()->count(),
         ];
     }
-}   
+
+    /**
+     * Get average resolution time across all resolved tickets
+     */
+    public static function getAverageResolutionTime(): float
+    {
+        $resolvedTickets = self::resolved()->withResolutionTime()->get();
+        
+        if ($resolvedTickets->count() === 0) {
+            return 0;
+        }
+
+        $totalTime = $resolvedTickets->sum(function($ticket) {
+            return $ticket->resolution_time_minutes;
+        });
+
+        return round($totalTime / $resolvedTickets->count(), 2);
+    }
+}

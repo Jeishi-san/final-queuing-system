@@ -6,24 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-Schema::create('activity_logs', function (Blueprint $table) {
-    $table->id();
+        Schema::create('activity_logs', function (Blueprint $table) {
+            $table->id();
 
-    // ✅ Make user_id nullable (guest submissions won’t have a user_id)
-    $table->foreignId('user_id')
-          ->nullable()
-          ->constrained()
-          ->nullOnDelete();
+            // IT user who performed the action
+            $table->foreignId('user_id')
+                  ->nullable()
+                  ->constrained('users')
+                  ->nullOnDelete();
 
-    $table->foreignId('ticket_id')
-          ->nullable()
-          ->constrained('tickets')
-          ->nullOnDelete();
+            // Ticket being acted upon
+            $table->foreignId('ticket_id')
+                  ->nullable()
+                  ->constrained('tickets')
+                  ->nullOnDelete();
 
-    $table->text('action');
-    $table->timestamp('performed_at')->nullable();
-    $table->timestamps();
-});
+            $table->timestamp('log_date')->useCurrent();
+            $table->string('action');
+            $table->text('details');
+            $table->timestamps();
+        });
     }
 
     public function down(): void {

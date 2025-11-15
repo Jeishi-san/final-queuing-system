@@ -2,41 +2,125 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     if (Auth::check()) {
         return redirect('/dashboard');
     }
-        return view('vue.home');
+    return view('vue.home');
 });
 
 Route::get('/queue', function () {
     return view('vue.queue');
 });
 
+// Public API Routes (for Vue components)
+Route::prefix('api')->group(function () {
+    // Authentication routes for LoginView.vue and RegisterView.vue
+    Route::post('/login', [LoginController::class, 'login']); // You'll need a LoginController
+    Route::post('/register', [RegisterController::class, 'register']); // You'll need a RegisterController
+    Route::post('/logout', [LoginController::class, 'logout']);
+    
+    // Public ticket submission (for AddTicket.vue)
+    Route::post('/tickets', [TicketController::class, 'store']);
+    
+    // Queue data for QueueView.vue and AdminQueueView.vue
+    Route::get('/queue/tickets', [TicketController::class, 'getQueueTickets']);
+    Route::get('/queue/stats', [TicketController::class, 'getQueueStats']);
+});
+
+// Protected API Routes (require authentication)
+Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
+    
+    // ==================== DASHBOARD ROUTES ====================
+    // For Dashboard.vue, Main.vue, Header.vue, Menu.vue
+    Route::get('/dashboard/stats', [TicketController::class, 'getDashboardStats']);
+    Route::get('/user/profile', [ProfileController::class, 'profile']); // For UserProfile.vue
+    
+    // ==================== USER MANAGEMENT ROUTES ====================
+    // For admin user management
+    Route::apiResource('users', UserController::class);
+    Route::get('/users/{user}/tickets-handled', [UserController::class, 'getTicketsHandled']);
+    Route::get('/users/{user}/average-resolution-time', [UserController::class, 'getAverageResolutionTime']);
+    Route::get('/users/{user}/activity-log', [UserController::class, 'getActivityLog']);
+    Route::patch('/users/{user}/account-status', [ProfileController::class, 'updateAccountStatus']);
+    
+    // ==================== TICKET ROUTES ====================
+    // For Ticket's.vue, AddTicket.vue, QueueList.vue
+    Route::apiResource('tickets', TicketController::class);
+    Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assignTicket']);
+    Route::post('/tickets/{ticket}/resolve', [TicketController::class, 'markAsResolved']);
+    Route::post('/tickets/{ticket}/reopen', [TicketController::class, 'reopen']);
+    Route::get('/tickets/queue/next-in-line', [TicketController::class, 'getNextInLine']); // For NextInLine.vue
+    Route::get('/tickets/in-progress', [TicketController::class, 'getInProgressTickets']); // For InProgress.vue
+    
+    // ==================== PROFILE ROUTES ====================
+    // For UserProfile.vue
+    Route::get('/profile', [ProfileController::class, 'profile']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::get('/profile/activity-log', [ProfileController::class, 'getActivityLog']);
+    Route::get('/profile/ticket-stats', [ProfileController::class, 'getTicketStats']);
+    
+    // ==================== ACTIVITY LOG ROUTES ====================
+    // For activity tracking
+    Route::apiResource('activity-logs', ActivityLogController::class);
+    Route::delete('/activity-logs/bulk-destroy', [ActivityLogController::class, 'bulkDestroy']);
+    Route::delete('/activity-logs/clear-old', [ActivityLogController::class, 'clearOldLogs']);
+    
+    // ==================== NOTIFICATION ROUTES ====================
+    // For notification system
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+});
+
+// Vue Route Handlers (SPA routes)
 Route::middleware(['auth', 'verified'])->group(function () {
 
+    // Main dashboard layout - all admin routes point to the same Vue component
     Route::get('/dashboard', function () {
         return view('vue.admin.dashboard');
     });
 
     Route::get('/dashboard/my-profile', function () {
-        return view('vue.admin.dashboard');
+        return view('vue.admin.dashboard'); // Handled by UserProfile.vue
     });
 
     Route::get('/dashboard/queue-list', function () {
-        return view('vue.admin.dashboard');
+        return view('vue.admin.dashboard'); // Handled by QueueList.vue and AdminQueueView.vue
     });
 
     Route::get('/dashboard/tickets', function () {
-        return view('vue.admin.dashboard');
+        return view('vue.admin.dashboard'); // Handled by Ticket's.vue
+    });
+
+    Route::get('/dashboard/users', function () {
+        return view('vue.admin.dashboard'); // For user management
+    });
+
+    Route::get('/dashboard/activity-logs', function () {
+        return view('vue.admin.dashboard'); // For activity logs
+    });
+
+    // Additional routes for other Vue components
+    Route::get('/dashboard/add-ticket', function () {
+        return view('vue.admin.dashboard'); // Handled by AddTicket.vue
+    });
+
+    Route::get('/dashboard/tools', function () {
+        return view('vue.admin.dashboard'); // Handled by tools components
     });
 });
+
+// Fallback route for Vue Router (must be last)
+Route::get('/{any}', function () {
+    return view('vue.admin.dashboard');
+})->where('any', '.*');
 
 
 /*

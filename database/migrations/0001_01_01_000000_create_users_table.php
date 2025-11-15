@@ -17,6 +17,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('image')->nullable();
+            $table->string('employee_id')->unique();
+            $table->enum('role', ['admin', 'team_leader', 'it_staff'])->default('it_staff');
+            $table->string('department')->default('IT');
+            $table->string('contact_number');
+            $table->enum('account_status', ['active', 'inactive', 'on-leave'])->default('active');
+            $table->timestamp('date_created')->useCurrent();
             $table->rememberToken();
             $table->timestamps();
         });

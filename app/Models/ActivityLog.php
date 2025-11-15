@@ -9,23 +9,30 @@ class ActivityLog extends Model
 {
     protected $fillable = [
         'user_id',
-        'ticket_id',       // ✅ don't forget this
+        'ticket_id',
+        'log_date',
         'action',
-        'performed_at',
+        'details'
     ];
 
-    // ✅ Cast performed_at to a Carbon date
     protected $casts = [
-        'performed_at' => 'datetime',
+        'log_date' => 'datetime',
     ];
 
+    /**
+     * User (IT personnel) who performed the action
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Ticket that was acted upon
+     */
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);
     }
+
 }
