@@ -47,15 +47,15 @@
         },
         queueNum: {
             type: String,
-            default: "DAM073010",
+            default: "Loading...",
         },
         ticketId: {
             type: String,
-            default: "INC000012496537",
+            default: "Loading...",
         },
         itStaff: {
             type: String,
-            default: "Randy Damos",
+            default: "Loading...",
         },
         style_div: {
             type: [String, Array, Object],

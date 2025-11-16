@@ -3,6 +3,10 @@
 
         <h3 class="text-3xl font-bold text-[#003D5B]">Next in Line</h3>
 
+        <div v-if="queueList.length == 0" class="mt-24 text-7xl font-bold text-[#003D5B]">
+            Loading...
+        </div>
+
         <div class="mt-5 space-y-6 text-7xl font-bold text-[#003D5B]">
             <h1 v-for="queue in queueList" :key="queue.id">
                 {{ queue.queue_number }} <!-- replace with your column -->
