@@ -2,140 +2,64 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'profile_picture', // ✅ Added for profile image support
-        // 'role', // Uncomment if you use roles (e.g., 'admin', 'it', 'agent')
+        'image',
+        'employee_id',
+        'role',
+        'department',
+        'contact_number',
+        'account_status'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
-        'remember_token',
+        'remember_token'
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array<string, string>
-     */
-    protected function casts(): array
+    // Relationships
+    public function ticketsHandled()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Ticket::class, 'assigned_to');
     }
 
-    /* ============================================================
-     |  Relationships
-     |============================================================
-     */
-
-    /**
-     * All activity logs performed by this user.
-     */
-    public function activityLogs(): HasMany
+    public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class);
     }
 
-    /**
-     * Tickets created/reported by this user.
-     */
-    public function tickets(): HasMany
+    // Helper: Check if staff is active employee
+    public function isActive()
     {
-        return $this->hasMany(Ticket::class, 'user_id');
+        return $this->account_status === 'active';
     }
 
-    /**
-     * Tickets assigned to this user (as IT personnel).
-     */
-    public function assignedTickets(): HasMany
+    // Tickets this staff is currently working on
+    public function currentQueueTickets()
     {
-        return $this->hasMany(Ticket::class, 'it_personnel_id');
+        return $this->ticketsHandled()->whereIn('status', [
+            'queued', 'in progress', 'on hold'
+        ]);
     }
 
-    /* ============================================================
-     |  Notifications (from Notifiable trait)
-     |============================================================
-     */
-
-    /**
-     * Get unread notifications count.
-     */
-    public function unreadCount(): int
+    // Log activity in the system
+    public function logActivity($ticketId, $action, $details)
     {
-        return $this->unreadNotifications()->count();
-    }
-
-    /**
-     * Get all notifications (latest first).
-     */
-    public function allNotifications(): Collection
-    {
-        return $this->notifications()->latest()->get();
-    }
-
-    /* ============================================================
-     |  Helper / Convenience Methods
-     |============================================================
-     */
-
-    /**
-     * Determine if the user is an IT personnel.
-     */
-    public function isITPersonnel(): bool
-    {
-        // Example with roles:
-        // return $this->role === 'it';
-
-        // Dynamic check based on assigned tickets
-        return $this->assignedTickets()->exists();
-    }
-
-    /**
-     * ✅ Get the full URL of the user's profile picture.
-     */
-    public function profileImageUrl(): string
-    {
-        if ($this->profile_picture && Storage::disk('public')->exists($this->profile_picture)) {
-            return asset('storage/' . $this->profile_picture);
-        }
-
-        // Default fallback image
-        return asset('images/default-avatar.png');
-    }
-
-    /**
-     * ✅ Delete old profile picture from storage.
-     */
-    public function deleteProfileImage(): void
-    {
-        if ($this->profile_picture && Storage::disk('public')->exists($this->profile_picture)) {
-            Storage::disk('public')->delete($this->profile_picture);
-        }
+        return ActivityLog::create([
+            'user_id' => $this->id,
+            'ticket_id' => $ticketId,
+            'action' => $action,
+            'details' => $details
+        ]);
     }
 }

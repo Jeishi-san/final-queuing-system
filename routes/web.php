@@ -22,13 +22,13 @@ Route::get('/queue', function () {
 // Public API Routes (for Vue components)
 Route::prefix('api')->group(function () {
     // Authentication routes for LoginView.vue and RegisterView.vue
-    Route::post('/login', [LoginController::class, 'login']); // You'll need a LoginController
-    Route::post('/register', [RegisterController::class, 'register']); // You'll need a RegisterController
-    Route::post('/logout', [LoginController::class, 'logout']);
-    
+    // Route::post('/login', [LoginController::class, 'login']); // You'll need a LoginController
+    // Route::post('/register', [RegisterController::class, 'register']); // You'll need a RegisterController
+    // Route::post('/logout', [LoginController::class, 'logout']);
+
     // Public ticket submission (for AddTicket.vue)
     Route::post('/tickets', [TicketController::class, 'store']);
-    
+
     // Queue data for QueueView.vue and AdminQueueView.vue
     Route::get('/queue/tickets', [TicketController::class, 'getQueueTickets']);
     Route::get('/queue/stats', [TicketController::class, 'getQueueStats']);
@@ -36,12 +36,12 @@ Route::prefix('api')->group(function () {
 
 // Protected API Routes (require authentication)
 Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
-    
+
     // ==================== DASHBOARD ROUTES ====================
     // For Dashboard.vue, Main.vue, Header.vue, Menu.vue
     Route::get('/dashboard/stats', [TicketController::class, 'getDashboardStats']);
     Route::get('/user/profile', [ProfileController::class, 'profile']); // For UserProfile.vue
-    
+
     // ==================== USER MANAGEMENT ROUTES ====================
     // For admin user management
     Route::apiResource('users', UserController::class);
@@ -49,7 +49,7 @@ Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
     Route::get('/users/{user}/average-resolution-time', [UserController::class, 'getAverageResolutionTime']);
     Route::get('/users/{user}/activity-log', [UserController::class, 'getActivityLog']);
     Route::patch('/users/{user}/account-status', [ProfileController::class, 'updateAccountStatus']);
-    
+
     // ==================== TICKET ROUTES ====================
     // For Ticket's.vue, AddTicket.vue, QueueList.vue
     Route::apiResource('tickets', TicketController::class);
@@ -58,25 +58,25 @@ Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
     Route::post('/tickets/{ticket}/reopen', [TicketController::class, 'reopen']);
     Route::get('/tickets/queue/next-in-line', [TicketController::class, 'getNextInLine']); // For NextInLine.vue
     Route::get('/tickets/in-progress', [TicketController::class, 'getInProgressTickets']); // For InProgress.vue
-    
+
     // ==================== PROFILE ROUTES ====================
     // For UserProfile.vue
     Route::get('/profile', [ProfileController::class, 'profile']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::get('/profile/activity-log', [ProfileController::class, 'getActivityLog']);
     Route::get('/profile/ticket-stats', [ProfileController::class, 'getTicketStats']);
-    
+
     // ==================== ACTIVITY LOG ROUTES ====================
     // For activity tracking
     Route::apiResource('activity-logs', ActivityLogController::class);
     Route::delete('/activity-logs/bulk-destroy', [ActivityLogController::class, 'bulkDestroy']);
     Route::delete('/activity-logs/clear-old', [ActivityLogController::class, 'clearOldLogs']);
-    
+
     // ==================== NOTIFICATION ROUTES ====================
     // For notification system
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead']);
-    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+    // Route::get('/notifications', [NotificationController::class, 'index']);
+    // Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead']);
+    // Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
 });
 
 // Vue Route Handlers (SPA routes)

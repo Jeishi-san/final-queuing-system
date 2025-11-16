@@ -2,164 +2,94 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the users.
-     */
+    // List all users
     public function index()
     {
-        $users = User::all();
-        return response()->json($users);
+        return response()->json(User::all());
     }
 
-    /**
-     * Store a newly created user.
-     */
+    // Create a new user
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
-            'employee_id' => 'required|string|unique:users,employee_id',
+            'employee_id' => 'required|unique:users',
             'role' => 'required|string',
-            'department' => 'required|string',
-            'contact_number' => 'required|string',
-            'image' => 'nullable|string',
-            'account_status' => 'sometimes|in:active,inactive,on-leave'
+            'department' => 'nullable|string',
+            'contact_number' => 'nullable|string',
+            'account_status' => 'nullable|in:active,inactive,on-leave'
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'employee_id' => $request->employee_id,
-            'role' => $request->role,
-            'department' => $request->department,
-            'contact_number' => $request->contact_number,
-            'image' => $request->image,
-            'account_status' => $request->account_status ?? 'active',
-        ]);
+        $validated['password'] = Hash::make($validated['password']);
+        $user = User::create($validated);
 
         return response()->json($user, 201);
     }
 
-    /**
-     * Display the specified user.
-     */
+    // Show a single user
     public function show(User $user)
     {
         return response()->json($user);
     }
 
-    /**
-     * Update the specified user.
-     */
+    // Update an existing user
     public function update(Request $request, User $user)
     {
-        $request->validate([
-            'name' => 'sometimes|string|max:255',
+        $validated = $request->validate([
+            'name' => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'password' => 'sometimes|string|min:6',
-            'employee_id' => 'sometimes|string|unique:users,employee_id,' . $user->id,
+            'employee_id' => 'sometimes|unique:users,employee_id,' . $user->id,
             'role' => 'sometimes|string',
-            'department' => 'sometimes|string',
-            'contact_number' => 'sometimes|string',
-            'image' => 'nullable|string',
-            'account_status' => 'sometimes|in:active,inactive,on-leave'
+            'department' => 'nullable|string',
+            'contact_number' => 'nullable|string',
+            'account_status' => 'nullable|in:active,inactive,on-leave'
         ]);
 
-        $updateData = $request->only([
-            'name', 'email', 'employee_id', 'role', 
-            'department', 'contact_number', 'image', 'account_status'
-        ]);
-
-        if ($request->has('password')) {
-            $updateData['password'] = bcrypt($request->password);
+        if(isset($validated['password'])){
+            $validated['password'] = Hash::make($validated['password']);
         }
 
-        $user->update($updateData);
-
+        $user->update($validated);
         return response()->json($user);
     }
 
-    /**
-     * Remove the specified user.
-     */
+    // Delete a user
     public function destroy(User $user)
     {
         $user->delete();
-        return response()->json(['message' => 'User deleted successfully']);
+        return response()->json(['message' => 'User deleted']);
     }
 
-    /**
-     * Get tickets handled by user
-     */
-    public function getTicketsHandled(User $user)
+    // Get tickets handled by this user
+    public function ticketsHandled(User $user)
     {
-        $ticketsHandled = $user->tickets_handled;
-        
-        return response()->json([
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'tickets_handled' => $ticketsHandled
-        ]);
+        return response()->json($user->ticketsHandled()->get());
     }
 
-    /**
-     * Get average resolution time for user
-     */
-    public function getAverageResolutionTime(User $user)
+    // Calculate average resolution time for this user's tickets
+    public function averageResolutionTime(User $user)
     {
-        $averageResolutionTime = $user->average_resolution_time;
-        
-        return response()->json([
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'average_resolution_time_minutes' => $averageResolutionTime,
-            'average_resolution_time_human' => $this->formatMinutesToHuman($averageResolutionTime)
-        ]);
+        $tickets = $user->ticketsHandled()->whereNotNull('resolved_at')->get();
+        if ($tickets->isEmpty()) return response()->json(['average_resolution_time' => 0]);
+
+        $totalSeconds = $tickets->sum(fn($ticket) => strtotime($ticket->resolved_at) - strtotime($ticket->created_at));
+        $avg = $totalSeconds / $tickets->count();
+
+        return response()->json(['average_resolution_time' => $avg]);
     }
 
-    /**
-     * Get activity log for user
-     */
-    public function getActivityLog(User $user)
+    // Get activity log of this user
+    public function activityLog(User $user)
     {
-        $activityLogs = $user->activityLogs()
-            ->with('ticket')
-            ->orderBy('log_date', 'desc')
-            ->get();
-
-        return response()->json([
-            'user_id' => $user->id,
-            'user_name' => $user->name,
-            'activity_logs' => $activityLogs
-        ]);
-    }
-
-    /**
-     * Helper method to format minutes to human readable time
-     */
-    private function formatMinutesToHuman($minutes)
-    {
-        if ($minutes == 0) {
-            return '0 minutes';
-        }
-
-        $days = floor($minutes / (24 * 60));
-        $hours = floor(($minutes % (24 * 60)) / 60);
-        $mins = $minutes % 60;
-
-        $parts = [];
-        if ($days > 0) $parts[] = $days . ' day' . ($days > 1 ? 's' : '');
-        if ($hours > 0) $parts[] = $hours . ' hour' . ($hours > 1 ? 's' : '');
-        if ($mins > 0) $parts[] = $mins . ' minute' . ($mins > 1 ? 's' : '');
-
-        return implode(', ', $parts);
+        return response()->json($user->activityLogs()->latest()->get());
     }
 }

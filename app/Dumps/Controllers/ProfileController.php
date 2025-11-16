@@ -138,7 +138,7 @@ class ProfileController extends Controller
             $validated['profile_picture'] = $imagePath;
         }
 
-        $user->update($validated);
+        //$user->update($validated);
 
         return redirect()
             ->route('profile.edit')

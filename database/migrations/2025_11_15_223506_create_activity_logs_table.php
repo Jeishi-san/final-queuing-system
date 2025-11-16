@@ -21,9 +21,8 @@ return new class extends Migration {
                   ->constrained('tickets')
                   ->nullOnDelete();
 
-            $table->timestamp('log_date')->useCurrent();
             $table->string('action');
-            $table->text('details');
+            $table->text('details')->nullable();
             $table->timestamps();
         });
     }
