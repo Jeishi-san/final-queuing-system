@@ -13,6 +13,27 @@ class QueueController extends Controller
         return response()->json(Queue::all());
     }
 
+    // List 5 queue items
+    public function getQueueList()
+    {
+        return response()->json(Queue::orderBy('created_at', 'asc')
+                ->take(5)
+                ->get());
+    }
+
+    // List queues with tickets "in progress"
+    public function getInProgressQueues()
+    {
+        $queues = Queue::with(['ticket', 'assignedUser']) // eager load related ticket
+            ->whereHas('ticket', function ($query) {
+                $query->where('status', 'in progress');
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json($queues);
+    }
+
     // Add a ticket to queue
     public function store(Request $request)
     {

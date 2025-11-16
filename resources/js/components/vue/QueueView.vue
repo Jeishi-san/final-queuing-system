@@ -43,6 +43,21 @@
         clearTimeout(hideTimer);
     });
 
+    import { onMounted } from "vue";
+
+    const inProgress = ref([]); // reactive array to store inProgress data
+
+    // Fetch inProgress data from backend when component mounts
+    onMounted(async () => {
+        try {
+            const response = await axios.get('/queues/inProgress'); // <-- your API endpoint
+            inProgress.value = response.data;
+            console.log(inProgress.value);
+        } catch (error) {
+            console.error("Failed to fetch queue:", error);
+        }
+    });
+
 </script>
 
 <template>
@@ -70,11 +85,17 @@
             <!-- LEFT SIDE -->
             <div class="flex flex-col w-full space-y-10">
                 <InProgress
+                    :queueNum="inProgress[0]?.queue_number"
+                    :ticketId="inProgress[0]?.ticket.ticket_number"
+                    :itStaff="inProgress[0]?.assigned_user.name"
                     style_div="w-[95%] h-65 bg-white rounded-3xl items-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)]"
                     style_h3="text-3xl font-bold text-[#003D5B]"
                     style_h1="text-8xl font-bold text-[#003D5B] my-5"
                     style_p="text-base text-gray-700"/> <!-- In Progress Ticket Card 1 -->
                 <InProgress
+                    :queueNum="inProgress[1]?.queue_number"
+                    :ticketId="inProgress[1]?.ticket.ticket_number"
+                    :itStaff="inProgress[1]?.assigned_user.name"
                     style_div="w-[95%] h-65 bg-white rounded-3xl"
                     style_h3="text-3xl font-bold text-[#003D5B]"
                     style_h1="text-8xl font-bold text-[#003D5B] my-5"
