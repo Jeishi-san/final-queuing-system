@@ -21,8 +21,7 @@ class TicketController extends Controller
             'holder_email' => 'required|email',
             'ticket_number' => 'required|string|unique:tickets',
             'issue' => 'required|string',
-            'status' => 'nullable|in:pending approval,queued,in progress,on hold,resolved,cancelled',
-            'assigned_to' => 'nullable|exists:users,id'
+            'status' => 'nullable|in:pending approval,queued,in progress,on hold,resolved,cancelled'
         ]);
 
         $ticket = Ticket::create($validated);

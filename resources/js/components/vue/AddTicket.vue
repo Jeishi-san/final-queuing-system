@@ -10,7 +10,7 @@
                 <input
                     type="text"
                     id="name"
-                    v-model="form.name"
+                    v-model="form.holder_name"
                     placeholder="Name"
                     required
                     class="w-full pl-3 pr-3 py-2
@@ -29,7 +29,7 @@
                 <input
                     type="email"
                     id="email"
-                    v-model="form.email"
+                    v-model="form.holder_email"
                     placeholder="Email"
                     required
                     class="w-full pl-3 pr-3 py-2
@@ -48,7 +48,7 @@
                 <input
                     type="text"
                     id="ticket_id"
-                    v-model="form.ticket_id"
+                    v-model="form.ticket_number"
                     placeholder="Ticket ID"
                     required
                     class="w-full pl-3 pr-3 py-2
@@ -62,35 +62,26 @@
                 />
             </div>
 
-            <!-- Issue Type Select -->
+            <!-- Issue Type Textarea -->
             <div class="relative">
-                <select
+                <textarea
                     id="issue"
                     v-model="form.issue"
-                    placeholder="Select Type"
+                    placeholder="Describe the issue..."
                     required
                     class="w-full pl-3 pr-3 py-2
-                            bg-[#003D5B]/20 text-[#003D5B]
-                            rounded-lg
-                            border border-transparent
-                            hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
-                            focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
-                            placeholder-[#003D5B]/70
-                            transition-all duration-300
-                            appearance-none"
-                >
-                    <option disabled value="">Select Category</option>
-                    <option value="hardware">Hardware Issue</option>
-                    <option value="software">Software Issue</option>
-                    <option value="network">Network Problem</option>
-                    <option value="accessory">Accessory Request</option>
-                </select>
-
-                <!-- Optional dropdown arrow -->
-                <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#003D5B]/70">
-                    ▼
-                </span>
+                        bg-[#003D5B]/20 text-[#003D5B]
+                        rounded-lg
+                        border border-transparent
+                        hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
+                        focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
+                        placeholder-[#003D5B]/70
+                        transition-all duration-300
+                        resize-none"
+                    rows="4"
+                ></textarea>
             </div>
+
 
             <!-- Submit Button -->
             <button
@@ -110,31 +101,36 @@
 
 <script setup>
     import { ref } from "vue";
-    import { useRouter } from "vue-router";
 
     const emit = defineEmits(['submitted']);
 
     const form = ref({
-        name: "",
-        email: "",
-        ticket_id: "",
+        holder_name: "",
+        holder_email: "",
+        ticket_number: "",
         issue: "",
+        status: "pending approval"
     });
 
-    const router = useRouter();
-
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         console.log("Ticket added:", form.value);
-        // You’ll connect this to backend (Laravel) later
 
-        // ... do form validation / API call here
+        try {
+            const response = await axios.post('/tickets', form.value)
+            console.log("Ticket added successfully:", response.data);
 
-        // Simulate success
-        setTimeout(() => {
-            emit('submitted') // tell the parent submission is successful
-        }, 500);
+            setTimeout(() => {
+                emit('submitted') // tell the parent submission is successful
+            }, 500);
 
+            //window.location.href = "/queue";
+        } catch (error) {
+            if (error.response) {
+            console.error("Adding failed:", error.response.data);
+            } else {
+            console.error("Error:", error);
+            }
+        }
 
-        router.push('/');
     };
 </script>
