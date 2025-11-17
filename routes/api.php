@@ -7,6 +7,7 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\TicketLogController;
+use App\Http\Controllers\Auth\RegisterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,8 +21,12 @@ use App\Http\Controllers\TicketLogController;
 
 // -------------------- USER ROUTES -------------------- //
 Route::prefix('users')->group(function () {
+
+    // ✅ CHANGED: Using '/create-account' instead of '/register' to avoid conflicts
+    Route::post('/create-account', [RegisterController::class, 'register']);
+
     Route::get('/', [UserController::class, 'index']);                  // List all users
-    Route::post('/', [UserController::class, 'store']);                 // Create new user
+    Route::post('/', [UserController::class, 'store']);                 // Create new user (admin)
     Route::get('{user}', [UserController::class, 'show']);              // Show user details
     Route::put('{user}', [UserController::class, 'update']);            // Update user
     Route::delete('{user}', [UserController::class, 'destroy']);        // Delete user

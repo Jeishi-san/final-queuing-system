@@ -25,19 +25,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', function () {
         return view('vue.admin.dashboard');
-    });
+    })->name('dashboard');
 
     Route::get('/dashboard/my-profile', function () {
         return view('vue.admin.dashboard');
-    });
+    })->name('profile');
 
     Route::get('/dashboard/queue-list', function () {
         return view('vue.admin.dashboard');
-    });
+    })->name('queue.list');
 
     Route::get('/dashboard/tickets', function () {
         return view('vue.admin.dashboard');
-    });
+    })->name('tickets');
 });
 
 // -------------------- USER ROUTES -------------------- //

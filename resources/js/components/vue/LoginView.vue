@@ -1,48 +1,61 @@
 <script setup>
-    import { ref } from "vue";
+import { ref } from "vue";
+import axios from 'axios'; // ← ADD THIS IMPORT
 
-    // img imports
-    import icon from '../../../assets/img/login-icon.png';
+// Set base URL for Herd
+axios.defaults.baseURL = 'https://final-queuing-system.test';
+axios.defaults.withCredentials = true; // ← IMPORTANT for Sanctum
 
-    const form = ref({
-        email: "",
-        password: "",
-    });
+// img imports
+import icon from '../../../assets/img/login-icon.png';
 
-    const handleLogin = async () => {
-        console.log("Login attempted with:", form.value);
-        try {
-            // (1) Get CSRF token from Laravel Sanctum
-            await axios.get("/sanctum/csrf-cookie");
+const form = ref({
+    email: "",
+    password: "",
+});
 
-            // (2) Submit login data
-            const response = await axios.post("/login", {
+const handleLogin = async () => {
+    console.log("Login attempted with:", form.value);
+    try {
+        // ✅ FIXED: Use correct Herd URL for CSRF cookie
+        await axios.get("/sanctum/csrf-cookie");
+
+        // ✅ FIXED: Use correct login endpoint
+        const response = await axios.post("/login", {
             email: form.value.email,
             password: form.value.password,
-            });
+        });
 
-            console.log("Login successful:", response.data);
+        console.log("Login successful:", response.data);
 
-            // (3) Redirect or show success message
-            // router.push("/dashboard"); // or whatever page you want
-            window.location.href = "/dashboard";
-        } catch (error) {
-            if (error.response) {
-            console.error("Login failed:", error.response.data);
-            } else {
-            console.error("Error:", error);
+        // Redirect to dashboard
+        window.location.href = "/dashboard";
+    } catch (error) {
+        console.error("Login error:", error);
+        
+        // Better error handling
+        if (error.response?.data?.errors) {
+            const errors = error.response.data.errors;
+            let errorMessage = 'Login failed:\n';
+            for (const field in errors) {
+                errorMessage += `${errors[field].join(', ')}\n`;
             }
+            alert(errorMessage);
+        } else if (error.code === 'ERR_NETWORK') {
+            alert('Cannot connect to server. Make sure Laravel Herd is running.');
+        } else {
+            alert('Login failed! Check your email and password.');
         }
-
-    };
-
-    function onLoginSuccess() {
-        globalState.loginSuccess = true
     }
+};
+
+function onLoginSuccess() {
+    globalState.loginSuccess = true
+}
 </script>
 
-
 <template>
+    <!-- Your existing template remains the same -->
     <div class="flex items-center justify-center">
         <div class="min-h-screen w-[325px] flex items-center justify-center">
             <div class="flex flex-col items-center w-full max-w-sm h-[420px] bg-white rounded-[15px] shadow-[0_10px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 ">
@@ -116,14 +129,13 @@
                 </form>
 
                 <p class="text-sm mt-4">
-                    Don’t have an account?
+                    Don't have an account?
                     <a href="/register" class="text-blue-600 hover:underline">Register here</a>
                 </p>
             </div>
         </div>
         <a href="/">
             <button
-                @click="$emit('prev_page')"
                 class="fixed bottom-5 left-5 text-white p-1 px-2 shadow-xl rounded-2xl hover:bg-[#029cda] transition"
             >
                 <span class="font-bold text-xl">
@@ -133,5 +145,3 @@
         </a>
     </div>
 </template>
-
-
