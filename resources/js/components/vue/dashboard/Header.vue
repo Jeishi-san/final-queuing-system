@@ -3,7 +3,7 @@
 
     import Date from '../tools/Date.vue';
 
-    import prof from '../../../../assets/img/prof.jpg';
+    // import prof from '../../../../assets/img/user-icon.svg';
 
     const props = defineProps({
         pageName: {
@@ -94,11 +94,27 @@
 
             <!-- Profile Icon -->
             <a href="/dashboard/my-profile" class="">
-                <img
+                <!-- <img
                     :src="prof"
                     alt="Profile Icon"
+
+                /> -->
+                <svg
                     class="w-10 h-10 rounded-full border-2 border-white hover:opacity-80 transition"
-                />
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 640 640">
+                    <!-- White background -->
+                    <rect width="640" height="640" fill="white" rx="50" /> <!-- optional rx for rounded corners -->
+
+                    <!-- Profile icon -->
+                    <path
+                        d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72
+                        200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112
+                        447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576
+                        528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
+                        fill="#003D5B"
+                    />
+                </svg>
             </a>
         </div>
 

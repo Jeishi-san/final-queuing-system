@@ -10,7 +10,9 @@ class QueueController extends Controller
     // List all queue items
     public function index()
     {
-        return response()->json(Queue::all());
+        $queues = Queue::with(['ticket', 'assignedUser'])->get();
+
+        return response()->json($queues);
     }
 
     // List 5 queue items

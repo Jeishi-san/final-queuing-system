@@ -40,9 +40,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
+// -------------------- USER ROUTES -------------------- //
+Route::prefix('users')->group(function () {
+    Route::get('/', [UserController::class, 'index']);                  // List all users
+    Route::post('/', [UserController::class, 'store']);                 // Create new user
+    Route::get('{user}', [UserController::class, 'show']);              // Show user details
+    Route::put('{user}', [UserController::class, 'update']);            // Update user
+    Route::delete('{user}', [UserController::class, 'destroy']);        // Delete user
+
+    // Helper routes
+    Route::get('{user}/tickets-handled', [UserController::class, 'ticketsHandled']);
+    Route::get('{user}/average-resolution', [UserController::class, 'averageResolutionTime']);
+    Route::get('{user}/activity-log', [UserController::class, 'activityLog']);
+});
+
 // -------------------- QUEUE ROUTES -------------------- //
 Route::prefix('queues')->group(function () {
     Route::get('/', [QueueController::class, 'getQueueList']);               // List top 5 queue items
+    Route::get('/listAll', [QueueController::class, 'index']);               // List all queue items
     Route::get('/inProgress', [QueueController::class, 'getInProgressQueues']);               // List queue items with in progress tickets
     Route::post('/', [QueueController::class, 'store']);              // Add ticket to queue
     Route::get('{queue}', [QueueController::class, 'show']);          // Show queue item

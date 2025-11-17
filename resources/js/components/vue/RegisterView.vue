@@ -5,23 +5,27 @@ const style_input ='w-full border border-gray-300 p-2 rounded-lg focus:outline-n
 
 const form = ref({
   name: '',
-  position: '',
+  role: '',
   email: '',
   employee_id: '',
-  contact_number: '',
   password: '',
-  department: 'IT Operations' // auto-created field
+  password_confirmation: ''
 })
 
 const register = async () => {
-  try {
-    const res = await axios.post('/register', form.value)
-    alert('Account registered successfully!')
-    console.log(res.data)
-  } catch (err) {
-    alert('Registration failed!')
-    console.error(err)
-  }
+    if (form.password !== form.password_confirmation) {
+        alert("Passwords do not match.");
+        return;
+    }
+
+    try {
+        const res = await axios.post('/register', form.value);
+        alert('Account registered successfully!')
+        console.log(res.data)
+    } catch (err) {
+        alert('Registration failed!')
+        console.error(err)
+    }
 }
 </script>
 
@@ -34,11 +38,11 @@ const register = async () => {
             <form @submit.prevent="register">
             <div class="space-y-3">
                 <input v-model="form.name" type="text" placeholder="Full Name" required :class="style_input" />
-                <input v-model="form.position" type="text" placeholder="Position" required :class="style_input" />
+                <input v-model="form.role" type="text" placeholder="Role" required :class="style_input" />
                 <input v-model="form.email" type="email" placeholder="Email" required :class="style_input" />
                 <input v-model="form.employee_id" type="text" placeholder="Employee ID" required :class="style_input" />
-                <input v-model="form.contact_number" type="text" placeholder="Contact Number" required :class="style_input" />
                 <input v-model="form.password" type="password" placeholder="Password" required :class="style_input" />
+                <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" required :class="style_input" />
             </div>
 
             <button type="submit" class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#004c73]">
