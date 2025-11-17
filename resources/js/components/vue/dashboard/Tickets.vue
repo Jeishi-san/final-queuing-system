@@ -1,36 +1,45 @@
 <template>
-  <div class="flex flex-col items-center h-[calc(100vh-100px)] w-full px-10 py-5 box-border">
+  <div class="flex flex-col h-[calc(100vh-100px)] w-full justify-start items-center px-10 py-5 box-border">
 
     <!-- Table Container -->
-    <div class="w-full max-w-6xl flex flex-col shadow-lg rounded-3xl overflow-hidden h-full">
+    <div class="w-full max-w-[1100px] flex flex-col shadow-lg rounded-3xl overflow-hidden">
 
       <!-- Table Header -->
-      <div class="grid grid-cols-[150px_120px_220px_120px_160px_120px_100px] bg-gray-200 p-3 rounded-t-2xl">
+      <div class="grid grid-cols-[150px_120px_220px_120px_160px_90px] bg-gray-200 p-3">
         <div :class="style_header">Ticket ID</div>
         <div :class="style_header">Name</div>
         <div :class="style_header">Email</div>
         <div :class="style_header">Issue Type</div>
         <div :class="style_header">Date Added</div>
         <div :class="style_header">Status</div>
-        <div :class="style_header">Action</div>
       </div>
 
       <!-- Table Rows -->
-      <div class="overflow-y-auto bg-[#99bbc4] flex-1 max-h-[calc(100vh-160px)]">
+      <div class="bg-[#99bbc4] overflow-y-auto max-h-[calc(100vh-160px)]">
         <div
           v-for="ticket in ticketList"
           :key="ticket.id"
-          class="grid grid-cols-[150px_120px_220px_120px_160px_120px_100px] border-b p-3 hover:bg-gray-100 cursor-pointer"
+          class="grid grid-cols-[150px_120px_220px_120px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer"
+          @click="openModal(ticket)"
         >
           <div>{{ ticket.ticket_number }}</div>
           <div>{{ ticket.holder_name }}</div>
           <div>{{ ticket.holder_email }}</div>
           <div>{{ ticket.issue }}</div>
           <div>{{ ticket.created_at }}</div>
-          <div>{{ ticket.status }}</div>
-          <div class="flex space-x-3 justify-center">
-            <button class="bg-[rgb(0,122,135)] text-white px-2 rounded hover:bg-[#006873] transition">Update</button>
-            <button class="bg-[#C9302C] text-white px-2 rounded hover:bg-[#A52824] transition">Delete</button>
+
+          <!-- Status inline dropdown -->
+          <div @click.stop>
+            <select
+              v-model="ticket.status"
+              @change="updateStatus(ticket)"
+              class="bg-white px-2 py-1 rounded border"
+            >
+              <option value="Pending">Pending</option>
+              <option value="In progress">In progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
+            </select>
           </div>
         </div>
 
@@ -43,30 +52,81 @@
 
     </div>
 
+    <!-- Modal for full edit -->
+    <TicketModal v-if="selectedTicket" @close="selectedTicket = null">
+      <template #title>Edit Ticket</template>
+      <template #body>
+        <div class="flex flex-col space-y-2">
+          <label>Holder Name</label>
+          <input v-model="selectedTicket.holder_name" class="border rounded px-2 py-1" />
+
+          <label>Holder Email</label>
+          <input v-model="selectedTicket.holder_email" class="border rounded px-2 py-1" />
+
+          <label>Issue Type</label>
+          <input v-model="selectedTicket.issue" class="border rounded px-2 py-1" />
+        </div>
+      </template>
+      <template #footer>
+        <button
+          class="bg-[rgb(0,122,135)] text-white px-4 py-2 rounded hover:bg-[#006873]"
+          @click="saveTicket(selectedTicket)"
+        >
+          Save
+        </button>
+      </template>
+    </TicketModal>
+
   </div>
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue';
-    import axios from 'axios';
+import { ref, onMounted } from 'vue';
+import TicketModal from './UpdateTicket.vue';
 
-    const style_header = "font-semibold text-[#003D5B]";
+const style_header = "font-semibold text-[#003D5B]";
+const ticketList = ref([]);
+const loading = ref(true);
+const selectedTicket = ref(null);
 
-    const ticketList = ref([]);
-    const loading = ref(true);
+// Fetch tickets
+const fetchTickets = async () => {
+  loading.value = true;
+  try {
+    const res = await axios.get('/tickets');
+    ticketList.value = res.data;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loading.value = false;
+  }
+};
 
-    const fetchTickets = async () => {
-    loading.value = true;
-    try {
-        const response = await axios.get('/tickets'); // replace with your API endpoint
-        ticketList.value = response.data; // adjust if API returns { data: [...] } structure
-        console.log(response.data);
-    } catch (error) {
-        console.error('Error fetching tickets:', error);
-    } finally {
-        loading.value = false;
-    }
-    };
+// Inline status update
+const updateStatus = async (ticket) => {
+  try {
+    await axios.put(`/tickets/${ticket.id}`, { status: ticket.status });
+  } catch (error) {
+    console.error('Failed to update status:', error);
+  }
+};
 
-    onMounted(fetchTickets);
+// Open modal for full edit
+const openModal = (ticket) => {
+  selectedTicket.value = { ...ticket }; // clone to avoid immediate table change
+};
+
+// Save from modal
+const saveTicket = async (ticket) => {
+  try {
+    await axios.put(`/tickets/${ticket.id}`, ticket);
+    const idx = ticketList.value.findIndex(t => t.id === ticket.id);
+    if (idx !== -1) ticketList.value[idx] = { ...ticket };
+    selectedTicket.value = null;
+  } catch (error) {
+    console.error('Failed to save ticket:', error);
+  }
+};
+
+onMounted(fetchTickets);
 </script>
