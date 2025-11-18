@@ -11,42 +11,53 @@ use Illuminate\Support\Facades\Log;
 
 class RegisterController extends Controller
 {
-public function register(Request $request)
-{
-    Log::info('Register method called', $request->all());
-    
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users',
-        'password' => 'required|string|min:8|confirmed',
-        'employee_id' => 'required|string|unique:users',
-        'role' => 'required|string|in:admin,team_leader,it_staff',
-        'department' => 'required|string',
-        'contact_number' => 'required|string',
-    ]);
+    public function register(Request $request)
+    {
+        Log::info('Register method called', $request->all());
+        
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'employee_id' => 'required|string|unique:users',
+            'role' => 'required|string|max:50', // ✅ FIXED: Accept any string
+            'department' => 'nullable|string',
+            'contact_number' => 'nullable|string',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'errors' => $validator->errors()
-        ], 422);
+        if ($validator->fails()) {
+            Log::error('Validation failed', $validator->errors()->toArray());
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'employee_id' => $request->employee_id,
+                'role' => $request->role,
+                'department' => $request->department ?? 'IT Ops',
+                'contact_number' => $request->contact_number,
+                'account_status' => 'active',
+            ]);
+
+            Log::info('User created successfully', ['user_id' => $user->id]);
+
+            return response()->json([
+                'message' => 'User registered successfully',
+                'user' => $user,
+                'redirect_url' => '/dashboard'
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('User creation failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Registration failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-        'employee_id' => $request->employee_id,
-        'role' => $request->role,
-        'department' => $request->department,
-        'contact_number' => $request->contact_number,
-        'account_status' => 'active',
-    ]);
-
-    // ✅ FIXED: Return JSON response instead of redirect
-    return response()->json([
-        'message' => 'User registered successfully',
-        'user' => $user,
-        'redirect_url' => '/dashboard' // Let frontend handle redirect
-    ], 201);
-}
 }
