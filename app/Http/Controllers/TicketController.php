@@ -86,9 +86,9 @@ class TicketController extends Controller
         }
 
         Queue::create([
-                'ticket_id'   => $ticket->id,
-                'assigned_to' => auth('web')->id(),
-                'queue_number' => QueueController::generateQueueNumber(),
+            'ticket_id'   => $ticket->id,
+            'assigned_to' => auth('web')->id(),
+            'queue_number' => QueueController::generateQueueNumber(),
         ]);
     }
 
@@ -107,6 +107,14 @@ class TicketController extends Controller
         // When status changes *to* queued → add to queue
         if ($newStatus === 'queued') {
             $this->addTicketToQueue($ticket);
+        } else {
+            // Update assigned_to in the queue table
+            $queue = Queue::where('ticket_id', $ticket->id)->first();
+
+            if ($queue) {
+                $queue->assigned_to = auth('web')->id(); // who is updating the status
+                $queue->save();
+            }
         }
 
         return response()->json([
