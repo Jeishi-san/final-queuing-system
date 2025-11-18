@@ -36,8 +36,8 @@
 
             <!-- Total ticket in Queue today -->
             <div class="w-[50%] h-full bg-white rounded-3xl flex flex-col text-center justify center p-5">
-                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Total Tickets in Queue</h3>
-                <h1 class="text-[100px] font-bold text-[#003D5B]">{{queuedTickets}}</h1> <!-- Total tickets in Queue List -->
+                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Successful Resolved Tickets</h3>
+                <h1 class="text-[100px] font-bold text-[#003D5B]">{{resolvedTickets}}</h1> <!-- Total tickets in Queue List -->
             </div>
         </div>
 
@@ -84,7 +84,7 @@
 
     import InProgress from '../cards/InProgress.vue';
 
-    const queuedTickets = ref(0);
+    const resolvedTickets = ref(0);
     const waiting = ref(0); // Example value for waiting in queue
 
     const queueList = ref([]); // Queue list for waiting table
@@ -119,10 +119,10 @@
     const fetchQueuedTickets = async () => {
         try {
             const response = await axios.get('/tickets/queued');
-            queuedTickets.value = response.data.queued_tickets;
+            resolvedTickets.value = response.data.resolved_tickets;
             waiting.value = response.data.waiting;
 
-            console.log("Queued Total", queuedTickets.value);
+            console.log("Queued Total", resolvedTickets.value);
             console.log("Waiting", waiting.value);
 
             const response2 = await axios.get('/queues/waiting');
