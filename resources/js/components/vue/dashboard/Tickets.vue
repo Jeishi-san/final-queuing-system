@@ -17,10 +17,14 @@
       <!-- Table Rows -->
       <div class="bg-[#99bbc4] overflow-y-auto max-h-[calc(100vh-160px)]">
         <div
-          v-for="ticket in ticketList"
-          :key="ticket.id"
-          class="grid grid-cols-[150px_120px_200px_150px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer"
-          @click="openModal(ticket)"
+            v-for="ticket in ticketList"
+            :key="ticket.id"
+            :class="[
+                'grid grid-cols-[150px_120px_200px_150px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer',
+                ticket.id == highlightId ? 'bg-[#029cda]' : 'hover:bg-gray-100']"
+
+            ref="ticketRows"
+            @click="openModal(ticket)"
         >
           <div>{{ ticket.ticket_number }}</div>
           <div>{{ ticket.holder_name }}</div>
@@ -86,13 +90,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import TicketModal from './UpdateTicket.vue';
 
 const style_header = "font-semibold text-[#003D5B]";
 const ticketList = ref([]);
 const loading = ref(true);
 const selectedTicket = ref(null);
+
+const highlightId = ref(null);
 
 const allStatuses = [
   'pending approval',
@@ -159,4 +165,25 @@ const saveTicket = async (ticket) => {
 };
 
 onMounted(fetchTickets);
+
+onMounted(async () => {
+  // read highlight param
+  const params = new URLSearchParams(window.location.search);
+  highlightId.value = params.get('highlight');
+
+  // fetch tickets
+  const res = await axios.get('/tickets');
+  ticketList.value = res.data;
+
+  // wait for DOM to update
+  await nextTick();
+
+  // scroll to highlighted ticket
+  if (highlightId.value) {
+    const target = document.querySelector('.bg-yellow-300');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+});
 </script>

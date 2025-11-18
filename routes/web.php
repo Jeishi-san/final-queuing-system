@@ -68,8 +68,6 @@ Route::prefix('queues')->group(function () {
 
     // Helper route
     Route::get('next-ticket', [QueueController::class, 'nextTicket']); // Get next ticket
-
-
 });
 
 // -------------------- TICKET ROUTES -------------------- //
