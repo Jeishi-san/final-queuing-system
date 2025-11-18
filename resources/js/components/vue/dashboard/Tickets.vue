@@ -5,11 +5,11 @@
     <div class="w-full max-w-[1100px] flex flex-col shadow-lg rounded-3xl overflow-hidden">
 
       <!-- Table Header -->
-      <div class="grid grid-cols-[150px_120px_220px_120px_160px_90px] bg-gray-200 p-3">
-        <div :class="style_header">Ticket ID</div>
-        <div :class="style_header">Name</div>
+      <div class="grid grid-cols-[150px_120px_200px_150px_160px_90px] bg-gray-200 p-3">
+        <div :class="style_header">Ticket Number</div>
+        <div :class="style_header">Holder Name</div>
         <div :class="style_header">Email</div>
-        <div :class="style_header">Issue Type</div>
+        <div :class="style_header">Issue</div>
         <div :class="style_header">Date Added</div>
         <div :class="style_header">Status</div>
       </div>
@@ -19,7 +19,7 @@
         <div
           v-for="ticket in ticketList"
           :key="ticket.id"
-          class="grid grid-cols-[150px_120px_220px_120px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer"
+          class="grid grid-cols-[150px_120px_200px_150px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer"
           @click="openModal(ticket)"
         >
           <div>{{ ticket.ticket_number }}</div>
@@ -31,15 +31,20 @@
           <!-- Status inline dropdown -->
           <div @click.stop>
             <select
-              v-model="ticket.status"
-              @change="updateStatus(ticket)"
-              class="bg-white px-2 py-1 rounded border"
+                v-model="ticket.status"
+                @change="updateStatus(ticket)"
+                class="bg-white px-2 py-1 rounded border"
             >
-              <option value="Pending">Pending</option>
-              <option value="In progress">In progress</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
+                <option
+                    v-for="status in allStatuses"
+                    :key="status"
+                    :value="status"
+                    :disabled="!isAllowedStatus(ticket.status, status)"
+                >
+                    {{ status }}
+                </option>
             </select>
+
           </div>
         </div>
 
@@ -88,6 +93,31 @@ const style_header = "font-semibold text-[#003D5B]";
 const ticketList = ref([]);
 const loading = ref(true);
 const selectedTicket = ref(null);
+
+const allStatuses = [
+  'pending approval',
+  'queued',
+  'in progress',
+  'on hold',
+  'resolved',
+  'cancelled'
+];
+
+const allowedNext = {
+  'pending approval': ['queued', 'cancelled'],
+  'queued': ['in progress', 'cancelled'],
+  'in progress': ['resolved', 'on hold', 'cancelled'],
+  'on hold': ['in progress', 'cancelled'],
+  'resolved': [],
+  'cancelled': []
+};
+
+// Logic: current is always valid; next allowed statuses are valid
+const isAllowedStatus = (current, target) => {
+  if (current === target) return true; // Always allow current
+  return allowedNext[current]?.includes(target);
+};
+
 
 // Fetch tickets
 const fetchTickets = async () => {

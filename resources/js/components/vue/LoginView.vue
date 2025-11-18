@@ -1,10 +1,10 @@
 <script setup>
 import { ref } from "vue";
-import axios from 'axios'; // ← ADD THIS IMPORT
+// import axios from 'axios'; // ← ADD THIS IMPORT
 
-// Set base URL for Herd
-axios.defaults.baseURL = 'https://final-queuing-system.test';
-axios.defaults.withCredentials = true; // ← IMPORTANT for Sanctum
+// // Set base URL for Herd
+// axios.defaults.baseURL = 'https://final-queuing-system.test';
+// axios.defaults.withCredentials = true; // ← IMPORTANT for Sanctum
 
 // img imports
 import icon from '../../../assets/img/login-icon.png';
@@ -32,7 +32,7 @@ const handleLogin = async () => {
         window.location.href = "/dashboard";
     } catch (error) {
         console.error("Login error:", error);
-        
+
         // Better error handling
         if (error.response?.data?.errors) {
             const errors = error.response.data.errors;

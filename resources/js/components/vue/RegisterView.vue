@@ -1,9 +1,9 @@
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+// import axios from 'axios';
 
-// Set base URL for Herd
-axios.defaults.baseURL = 'https://final-queuing-system.test';
+// // Set base URL for Herd
+// axios.defaults.baseURL = 'https://final-queuing-system.test';
 
 const style_input = 'w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003D5B]';
 
@@ -30,13 +30,13 @@ const register = async () => {
         const res = await axios.post('/api/users/create-account', form.value);
         alert('Account registered successfully!')
         console.log(res.data)
-        
+
         // Optional: Redirect to login
         // window.location.href = '/login';
-        
+
     } catch (err) {
         console.error('Registration error:', err);
-        
+
         // Better error handling
         if (err.response?.data?.errors) {
             const errors = err.response.data.errors;
@@ -62,7 +62,7 @@ const register = async () => {
             <form @submit.prevent="register">
             <div class="space-y-3">
                 <input v-model="form.name" type="text" placeholder="Full Name" required :class="style_input" />
-                
+
                 <!-- ✅ Better: Use select for role -->
                 <select v-model="form.role" required :class="style_input">
                     <option value="">Select Role</option>
@@ -70,13 +70,13 @@ const register = async () => {
                     <option value="team_leader">Team Leader</option>
                     <option value="admin">Admin</option>
                 </select>
-                
+
                 <input v-model="form.email" type="email" placeholder="Email" required :class="style_input" />
                 <input v-model="form.employee_id" type="text" placeholder="Employee ID" required :class="style_input" />
-                
+
                 <input v-model="form.department" type="text" placeholder="Department" required :class="style_input" />
                 <input v-model="form.contact_number" type="text" placeholder="Contact Number" required :class="style_input" />
-                
+
                 <input v-model="form.password" type="password" placeholder="Password" required :class="style_input" />
                 <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" required :class="style_input" />
             </div>
