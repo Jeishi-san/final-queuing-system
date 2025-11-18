@@ -9,9 +9,9 @@
                         v-if="inProgressList.length > 0"
                         :key="currentCard.ticket_id"
                         title="In Progress..."
-                        :queue-num="currentCard.queue_num"
-                        :ticket-id="currentCard.ticket_id"
-                        :it-staff="currentCard.it_staff"
+                        :queueNum="currentCard.queue_num"
+                        :ticketId="currentCard.ticket_id"
+                        :itStaff="currentCard.it_staff"
 
                         style_div="w-full h-full justify-center bg-white rounded-3xl"
                         style_h3="text-2xl font-bold text-[#003D5B] text-left"
@@ -46,7 +46,7 @@
             <div class="w-full bg-white rounded-3xl flex justify-between pb-5">
                 <span class="text-lg font-semibold">Waiting in Queue: {{ waiting }}</span> <!-- Number of waiting in queue (inQueueToday - resolvedTickets) -->
                 <a href="/queue">
-                    <span>View Queue Display</span>
+                    <a href="/queue">View Public Queue Display</a>
                 </a>
             </div>
 
@@ -93,7 +93,6 @@
     const queueEntries = ref([
     { status: "InProgress", queue_num: "DAM073010", ticket_id: "INC000012496537", title: "Repairing System", it_staff: "Randy Damos" },
     { status: "InProgress", queue_num: "DAM073012", ticket_id: "INC000012496538", title: "Replacing Mouse", it_staff: "Andy Sayre" },
-    { status: "Waiting", queue_num: "DAM073014", ticket_id: "INC000012496539", title: "Pending Review", it_staff: "Arl Ablanzar" },
     ]);
 
     const inProgressList = computed(() => queueEntries.value.filter(e => e.status === "InProgress").slice(0, 2));
@@ -112,7 +111,7 @@
         if (inProgressList.value.length > 1) {
             intervalId = setInterval(() => {
             currentIndex.value = (currentIndex.value + 1) % inProgressList.value.length;
-            }, 5000);
+            }, 3000);
         }
     }
 
