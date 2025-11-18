@@ -73,6 +73,7 @@ Route::prefix('queues')->group(function () {
 // -------------------- TICKET ROUTES -------------------- //
 Route::prefix('tickets')->group(function () {
     Route::get('/', [TicketController::class, 'index']);               // List all tickets
+    Route::get('/queued', [TicketController::class, 'countQueuedTickets']);               // Count Queued Tickets
 
     Route::post('/', [TicketController::class, 'store']);              // Create ticket
     Route::get('{ticket}', [TicketController::class, 'show']);         // Show ticket

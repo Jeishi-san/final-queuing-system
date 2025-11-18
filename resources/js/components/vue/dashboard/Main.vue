@@ -36,8 +36,8 @@
 
             <!-- Total ticket in Queue today -->
             <div class="w-[50%] h-full bg-white rounded-3xl flex flex-col text-center justify center p-5">
-                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Total Tickets in Queue Today</h3>
-                <h1 class="text-[100px] font-bold text-[#003D5B]">20</h1> <!-- Total tickets in Queue List -->
+                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Total Tickets in Queue</h3>
+                <h1 class="text-[100px] font-bold text-[#003D5B]">{{queuedTickets}}</h1> <!-- Total tickets in Queue List -->
             </div>
         </div>
 
@@ -109,6 +109,7 @@
 
     import InProgress from '../cards/InProgress.vue';
 
+    const queuedTickets = ref(0);
     const waiting = ref(15); // Example value for waiting in queue
 
     // Simulated DB data
@@ -130,13 +131,27 @@
     currentIndex.value = i;
     }
     function startIntervalIfNeeded() {
-    clearInterval(intervalId);
-    if (inProgressList.value.length > 1) {
-        intervalId = setInterval(() => {
-        currentIndex.value = (currentIndex.value + 1) % inProgressList.value.length;
-        }, 5000);
+        clearInterval(intervalId);
+        if (inProgressList.value.length > 1) {
+            intervalId = setInterval(() => {
+            currentIndex.value = (currentIndex.value + 1) % inProgressList.value.length;
+            }, 5000);
+        }
     }
-    }
+
+    const fetchQueuedTickets = async () => {
+        try {
+            const response = await axios.get('/tickets/queued');
+            queuedTickets.value = response.data.queued_tickets;
+            console.log(queuedTickets.value);
+        } catch (error) {
+            console.error("Failed to fetch tickets:", error);
+        }
+    };
+
+    onMounted(() => {
+        fetchQueuedTickets();
+    });
 
     onMounted(startIntervalIfNeeded);
     onUnmounted(() => clearInterval(intervalId));

@@ -123,4 +123,13 @@ class TicketController extends Controller
         ]);
     }
 
+    public function countQueuedTickets()
+    {
+        $count = Ticket::where('status', 'queued')->count();
+
+        $count += Ticket::where('status', 'in progress')->count();
+
+        return response()->json(['queued_tickets' => $count]);
+    }
+
 }
