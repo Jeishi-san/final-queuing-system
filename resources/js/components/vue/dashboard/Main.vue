@@ -55,46 +55,21 @@
                 <!-- Table Header -->
                 <div class="grid grid-cols-3 gap-4 bg-gray-200 p-3 rounded-t-2xl">
                     <div class="font-semibold text-[#003D5B]">Order</div>
-                    <div class="font-semibold text-[#003D5B]">Ticket ID</div>
-                    <div class="font-semibold text-[#003D5B]">Issue Type</div>
+                    <div class="font-semibold text-[#003D5B]">Ticket Number</div>
+                    <div class="font-semibold text-[#003D5B]">Issue</div>
                 </div>
 
                 <!-- Table Rows: data must be fetch from db -->
                  <div class="max-h-64 overflow-y-auto rounded-b-2xl">
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730002</div>
-                        <div>INC000012496537</div>
-                        <div>Keyboard</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730003</div>
-                        <div>INC000078925431</div>
-                        <div>Monitor</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730003</div>
-                        <div>INC000078925431</div>
-                        <div>Monitor</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730003</div>
-                        <div>INC000078925431</div>
-                        <div>Monitor</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730003</div>
-                        <div>INC000078925431</div>
-                        <div>Monitor</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730003</div>
-                        <div>INC000078925431</div>
-                        <div>Monitor</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer">
-                        <div>DAM0730003</div>
-                        <div>INC000078925431</div>
-                        <div>Monitor</div>
+                    <div
+                        v-for="queue in queueList"
+                        :key="queue.id"
+                        class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer"
+                        @click="goToTicket(queue.ticket?.id)"
+                    >
+                        <div>{{ queue.queue_number }}</div>
+                        <div>{{ queue.ticket?.ticket_number}}</div>
+                        <div>{{ queue.ticket?.issue}}</div>
                     </div>
                 </div>
                 <!-- More rows can be added similarly -->
@@ -110,7 +85,9 @@
     import InProgress from '../cards/InProgress.vue';
 
     const queuedTickets = ref(0);
-    const waiting = ref(15); // Example value for waiting in queue
+    const waiting = ref(0); // Example value for waiting in queue
+
+    const queueList = ref([]); // Queue list for waiting table
 
     // Simulated DB data
     const queueEntries = ref([
@@ -143,7 +120,14 @@
         try {
             const response = await axios.get('/tickets/queued');
             queuedTickets.value = response.data.queued_tickets;
-            console.log(queuedTickets.value);
+            waiting.value = response.data.waiting;
+
+            console.log("Queued Total", queuedTickets.value);
+            console.log("Waiting", waiting.value);
+
+            const response2 = await axios.get('/queues/waiting');
+            queueList.value = response2.data;
+            console.log("Waiting Queue Items", queueList.value);
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
         }
@@ -152,6 +136,11 @@
     onMounted(() => {
         fetchQueuedTickets();
     });
+
+    const goToTicket = (ticketId) => {
+        if (!ticketId) return;
+        window.location.href = `/dashboard/tickets?highlight=${ticketId}`;
+    };
 
     onMounted(startIntervalIfNeeded);
     onUnmounted(() => clearInterval(intervalId));

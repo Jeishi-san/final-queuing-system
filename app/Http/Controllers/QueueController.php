@@ -29,6 +29,19 @@ class QueueController extends Controller
         return response()->json($queues);
     }
 
+    // Get count of waiting tickets
+    public function getWaitingItems()
+    {
+        $queues = Queue::with('ticket',) // eager load related ticket
+            ->whereHas('ticket', function ($query) {
+                $query->where('status', 'queued');
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json($queues);
+    }
+
     // List queues with tickets "in progress"
     public function getInProgressQueues()
     {

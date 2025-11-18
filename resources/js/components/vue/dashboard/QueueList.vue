@@ -21,7 +21,7 @@
           class="grid grid-cols-5 gap-3 border-b p-3 hover:bg-gray-100 cursor-pointer"
           @click="goToTicket(queue.ticket?.id)"
         >
-          <div>{{ queue.queue_number }}</div>
+            <div>{{ queue.queue_number }}</div>
             <div>{{ queue.ticket?.ticket_number ?? 'N/A' }}</div>
             <div>{{ queue.assigned_user?.name}}</div>
             <div>{{ queue.updated_at }}</div>
