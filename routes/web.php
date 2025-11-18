@@ -59,6 +59,8 @@ Route::prefix('queues')->group(function () {
     Route::get('/', [QueueController::class, 'getQueueList']);               // List top 5 queue items
     Route::get('/listAll', [QueueController::class, 'index']);               // List all queue items
     Route::get('/inProgress', [QueueController::class, 'getInProgressQueues']);               // List queue items with in progress tickets
+    Route::get('/addTicketToQueue', [QueueController::class, 'generateQueueNumber']);
+
     Route::post('/', [QueueController::class, 'store']);              // Add ticket to queue
     Route::get('{queue}', [QueueController::class, 'show']);          // Show queue item
     Route::put('{queue}', [QueueController::class, 'update']);        // Update queue item
@@ -66,14 +68,17 @@ Route::prefix('queues')->group(function () {
 
     // Helper route
     Route::get('next-ticket', [QueueController::class, 'nextTicket']); // Get next ticket
+
+
 });
 
 // -------------------- TICKET ROUTES -------------------- //
 Route::prefix('tickets')->group(function () {
     Route::get('/', [TicketController::class, 'index']);               // List all tickets
+
     Route::post('/', [TicketController::class, 'store']);              // Create ticket
     Route::get('{ticket}', [TicketController::class, 'show']);         // Show ticket
-    Route::put('{ticket}', [TicketController::class, 'update']);       // Update ticket
+    Route::put('{ticket}', [TicketController::class, 'updateStatus']);       // Update ticket
     Route::delete('{ticket}', [TicketController::class, 'destroy']);   // Delete ticket
 
     // Helper routes

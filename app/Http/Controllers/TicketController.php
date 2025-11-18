@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Ticket;
+use App\Models\Queue;
+use App\Http\Controllers\QueueController;
 
 class TicketController extends Controller
 {
@@ -75,4 +77,42 @@ class TicketController extends Controller
     {
         return response()->json(Ticket::status($status)->get());
     }
+
+    public function addTicketToQueue(Ticket $ticket)
+    {
+        //Prevent duplicate queue entries
+        if (Queue::where('ticket_id', $ticket->id)->exists()) {
+            return;
+        }
+
+        Queue::create([
+                'ticket_id'   => $ticket->id,
+                'assigned_to' => auth('web')->id(),
+                'queue_number' => QueueController::generateQueueNumber(),
+        ]);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        $ticket = Ticket::findOrFail($id);
+        $newStatus = $request->status;
+
+        $ticket->status = $newStatus;
+        $ticket->save();
+
+        // When status changes *to* queued → add to queue
+        if ($newStatus === 'queued') {
+            $this->addTicketToQueue($ticket);
+        }
+
+        return response()->json([
+            'message' => 'Status updated',
+            'ticket' => $ticket
+        ]);
+    }
+
 }

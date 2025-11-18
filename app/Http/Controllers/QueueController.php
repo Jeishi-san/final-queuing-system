@@ -84,4 +84,19 @@ class QueueController extends Controller
     {
         return response()->json(Queue::nextTicket());
     }
+
+    public static function generateQueueNumber()
+    {
+        $lastQueue = Queue::orderBy('queue_number', 'desc')->first();
+
+        // Extract the number part (remove "DAM")
+        if ($lastQueue && str_starts_with($lastQueue->queue_number, 'DAM')) {
+            $num = intval(substr($lastQueue->queue_number, 3)) + 1;
+        } else {
+            $num = 0;
+        }
+
+        // Format back to DAM000000 style
+        return 'DAM' . str_pad($num, 6, '0', STR_PAD_LEFT);
+    }
 }
