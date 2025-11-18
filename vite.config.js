@@ -7,11 +7,47 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
-                'resources/js/app.js', 'resources/css/vue.js',
-                'resources/js/notification-manager.js', // Make sure this is here
+                'resources/js/app.js',
             ],
             refresh: true,
         }),
         vue(),
     ],
+    server: {
+        host: 'localhost',
+        port: 5173,
+        strictPort: true,
+        https: false,
+        hmr: {
+            host: 'localhost',
+        },  
+        proxy: {
+            // ✅ Proxy everything to Laravel
+            '/api': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/sanctum': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/login': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/register': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/dashboard': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            }
+        }
+    },
 });
