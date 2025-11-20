@@ -45,9 +45,7 @@
         <div class="h-[calc(65%_-_2rem)] bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
             <div class="w-full bg-white rounded-3xl flex justify-between pb-5">
                 <span class="text-lg font-semibold">Waiting in Queue: {{ waiting }}</span> <!-- Number of waiting in queue (inQueueToday - resolvedTickets) -->
-                <a href="/queue">
-                    <a href="/queue">View Public Queue Display</a>
-                </a>
+                <a href="/queue">View Public Queue Display</a>
             </div>
 
             <!-- Table for Queue List in Waiting -->

@@ -17,9 +17,9 @@
 
 
     onMounted(() => {
-        setTimeout(() => {
-            isSidebarOpen.value = false;
-        }, 2000)
+        // setTimeout(() => {
+        //     isSidebarOpen.value = false;
+        // }, 2000)
     });
 
     /* STYLES */
