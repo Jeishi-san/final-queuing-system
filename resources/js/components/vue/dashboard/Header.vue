@@ -60,12 +60,12 @@
         <!-- Right -->
         <div class="flex items-center space-x-3 relative">
             <!-- Search Icon -->
-            <button
+            <!-- <button
                 v-if="!isSearching"
                 @click="toggleSearch"
                 class="hover:text-gray-300 transition-colors cursor-pointer">
                 <FontAwesomeIcon :icon="['fas', 'search']" class="text-white text-xl"/>
-            </button>
+            </button> -->
 
             <!-- Search Bar -->
             <transition

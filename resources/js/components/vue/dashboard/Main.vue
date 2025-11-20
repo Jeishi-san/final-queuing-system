@@ -36,7 +36,7 @@
 
             <!-- Total ticket in Queue today -->
             <div class="w-[50%] h-full bg-white rounded-3xl flex flex-col text-center justify center p-5">
-                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Successful Resolved Tickets</h3>
+                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Successfully Resolved Tickets</h3>
                 <h1 class="text-[100px] font-bold text-[#003D5B]">{{resolvedTickets}}</h1> <!-- Total tickets in Queue List -->
             </div>
         </div>
