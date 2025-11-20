@@ -7,10 +7,27 @@ use App\Models\Queue;
 
 class QueueController extends Controller
 {
-    // List all queue items
+    // List queue items by filters
     public function index(Request $request)
     {
         $query = Queue::with(['ticket', 'assignedUser']);
+
+        // Filter by queue_number
+        if ($request->queue_number) {
+            $query->where('queue_number', 'LIKE', '%'.$request->queue_number.'%');
+        }
+
+        // Filter by ticket_number
+        if ($request->ticket_number) {
+            $query->whereHas('ticket', function ($q) use ($request) {
+                $q->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
+            });
+        }
+
+        // Filter by assigned staff
+        if ($request->assigned_to) {
+            $query->where('assigned_to', $request->assigned_to);
+        }
 
         // Filter by status
         if ($request->status) {
@@ -19,14 +36,15 @@ class QueueController extends Controller
             });
         }
 
-        // Filter by ticket number
-        if ($request->ticket_number) {
-            $query->whereHas('ticket', function ($q) use ($request) {
-                $q->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
-            });
+        // Filter by date range
+        if ($request->start_date) {
+            $query->whereDate('updated_at', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('updated_at', '<=', $request->end_date);
         }
 
-        return $query->orderBy('updated_at', 'desc')->get();
+        return $query->orderBy('queue_number')->get();
     }
 
     // List 5 queue items

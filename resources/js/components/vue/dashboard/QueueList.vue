@@ -123,7 +123,7 @@
         //end_date: "",
     });
 
-    const statuses = ["pending approval","queued","in progress","on hold","resolved","cancelled"];
+    const statuses = ["queued","in progress","on hold","resolved","cancelled"];
 
     // fetch data from backend
     const fetchQueues = async () => {

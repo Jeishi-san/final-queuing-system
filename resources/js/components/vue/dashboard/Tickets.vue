@@ -30,7 +30,7 @@
           <div>{{ ticket.holder_name }}</div>
           <div>{{ ticket.holder_email }}</div>
           <div>{{ ticket.issue }}</div>
-          <div>{{ ticket.created_at }}</div>
+          <div>{{ formatDate(ticket.created_at) }}</div>
 
           <!-- Status inline dropdown -->
           <div @click.stop>
@@ -186,4 +186,10 @@ onMounted(async () => {
     }
   }
 });
+
+    // Date format
+    const formatDate = (iso) => {
+        if (!iso) return "N/A";
+        return new Date(iso).toLocaleString();
+    };
 </script>
