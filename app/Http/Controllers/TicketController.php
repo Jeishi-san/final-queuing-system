@@ -10,9 +10,44 @@ use App\Http\Controllers\QueueController;
 class TicketController extends Controller
 {
     // List all tickets
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Ticket::all());
+        $query = Ticket::query()->with(['assignedUser', 'queue']);
+
+        // Filter by ticket_number
+        if ($request->ticket_number) {
+            $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
+        }
+
+        // Filter by holder_name
+        if ($request->holder_name) {
+            $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%');
+        }
+
+        // Filter by holder_email
+        if ($request->holder_email) {
+            $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%');
+        }
+
+        // Filter by issue
+        if ($request->issue) {
+            $query->where('issue', 'LIKE', '%'.$request->issue.'%');
+        }
+
+        // Filter by status
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by date range
+        if ($request->start_date) {
+            $query->whereDate('updated_at', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('updated_at', '<=', $request->end_date);
+        }
+
+        return $query->orderBy('ticket_number')->get();
     }
 
     // Create a new ticket
