@@ -43,7 +43,7 @@
         <!-- Main Section -->
         <div class="flex flex-col flex-1 transition-all duration-300">
             <!-- Header -->
-            <Header @isFilterClicked="filterON"  :pageName="pageName"></Header>
+            <Header @isFilterClicked="filterON" :pageName="pageName"></Header>
 
             <!-- Content Area -->
             <component :is="CurrentComponent" :isFilterClicked="filterClicked"/>

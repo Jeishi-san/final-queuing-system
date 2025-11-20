@@ -8,11 +8,25 @@ use App\Models\Queue;
 class QueueController extends Controller
 {
     // List all queue items
-    public function index()
+    public function index(Request $request)
     {
-        $queues = Queue::with(['ticket', 'assignedUser'])->get();
+        $query = Queue::with(['ticket', 'assignedUser']);
 
-        return response()->json($queues);
+        // Filter by status
+        if ($request->status) {
+            $query->whereHas('ticket', function ($q) use ($request) {
+                $q->where('status', $request->status);
+            });
+        }
+
+        // Filter by ticket number
+        if ($request->ticket_number) {
+            $query->whereHas('ticket', function ($q) use ($request) {
+                $q->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
+            });
+        }
+
+        return $query->orderBy('updated_at', 'desc')->get();
     }
 
     // List 5 queue items

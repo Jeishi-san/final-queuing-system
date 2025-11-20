@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed } from "vue";
+    import { ref, computed, onMounted } from "vue";
 
     import Date from '../tools/Date.vue';
 
@@ -11,6 +11,9 @@
             default: "Dashboard",
         },
     });
+
+    const isQueuePage = ref(false);
+    const isTicketsPage = ref(false);
 
     const pageName = computed(() => props.pageName);
 
@@ -56,6 +59,25 @@
         emit('isFilterClicked', false);
         isFilterClicked.value = false;
     };
+
+    const getPageName = () =>  {
+        if (pageName.value == "Queue") {
+            isQueuePage.value = true;
+            console.log("Queue Page detected");
+        } else if (pageName.value === "Tickets") {
+            isTicketsPage.value = true;
+            console.log("Tickets Page detected");
+        } else {
+            isQueuePage.value = false;
+            isTicketsPage.value = false;
+            console.log("Other Page detected", pageName.value);
+        }
+    };
+
+    onMounted(() => {
+        getPageName();
+    });
+
 </script>
 
 <template>
@@ -107,7 +129,7 @@
             </transition>
 
             <!-- Filter button -->
-            <button v-if="!isFilterClicked" @click="filterON" class="px-2 py-1 rounded bg-white text-[#003D5B]">Filter</button>
+            <button v-if="!isFilterClicked && (isQueuePage || isTicketsPage) " @click="filterON" class="px-2 py-1 rounded bg-white text-[#003D5B]">Filter</button>
             <button v-if="isFilterClicked" @click="filterOFF" class="px-2 py-1 rounded bg-red-500 text-white">Close Filter</button>
 
 

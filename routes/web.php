@@ -57,7 +57,7 @@ Route::prefix('users')->group(function () {
 // -------------------- QUEUE ROUTES -------------------- //
 Route::prefix('queues')->group(function () {
     Route::get('/', [QueueController::class, 'getQueueList']);               // List top 5 queue items
-    Route::get('/listAll', [QueueController::class, 'index']);               // List all queue items
+    Route::get('/list', [QueueController::class, 'index']);               // List all queue items
     Route::get('/inProgress', [QueueController::class, 'getInProgressQueues']);               // List queue items with in progress tickets
     Route::get('/waiting', [QueueController::class, 'getWaitingItems']);               // Get count of waiting tickets
 

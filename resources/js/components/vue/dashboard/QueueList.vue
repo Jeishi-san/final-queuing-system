@@ -36,12 +36,6 @@
           <option value="">All statuses</option>
           <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
         </select>
-
-        <!-- My Tickets Only -->
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" v-model="filters.my_tickets_only" />
-          My Tickets Only
-        </label>
       </div>
 
       <!-- Row 2 -->
@@ -110,7 +104,7 @@
     const style_header = "font-semibold text-[#003D5B]";
 
     const props = defineProps({
-      isFilterClicked: Boolean
+      isFilterClicked: Boolean,
     });
 
     // reactive variables
@@ -121,26 +115,21 @@
 
     // FILTERS (SERVER-SIDE)
     const filters = ref({
-        queue_number: "",
+        //queue_number: "",
         ticket_number: "",
-        assigned_to: "",
+        //assigned_to: "",
         status: "",
-        start_date: "",
-        end_date: "",
-        my_tickets_only: false,
+        //start_date: "",
+        //end_date: "",
     });
 
     const statuses = ["pending approval","queued","in progress","on hold","resolved","cancelled"];
-
 
     // fetch data from backend
     const fetchQueues = async () => {
         loading.value = true;
         try {
-            const response = await axios.get('/queues/listAll');
-
-
-
+            const response = await axios.get('/queues/list', { params: filters.value });
             queueList.value = response.data; // adjust if API returns { data: [...] } structure
             console.log(response.data);
         } catch (error) {
@@ -148,6 +137,13 @@
         } finally {
             loading.value = false;
         }
+    };
+
+    const applyFilters = () => fetchQueues();
+
+    const resetFilters = () => {
+        filters.value = { status: "", ticket_number: "" };
+        fetchQueues();
     };
 
     // Date format
