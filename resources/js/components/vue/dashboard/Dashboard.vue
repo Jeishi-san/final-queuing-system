@@ -9,6 +9,13 @@
 
     import { ref } from "vue";
 
+
+    const filterClicked = ref(false);
+
+    const filterON = (value) => {
+        filterClicked.value = value
+    }
+
     const components = {
         "/dashboard": MainContent,
         "/dashboard/my-profile": Profile,
@@ -36,10 +43,10 @@
         <!-- Main Section -->
         <div class="flex flex-col flex-1 transition-all duration-300">
             <!-- Header -->
-            <Header :pageName="pageName"></Header>
+            <Header @isFilterClicked="filterON"  :pageName="pageName"></Header>
 
             <!-- Content Area -->
-            <component :is="CurrentComponent" />
+            <component :is="CurrentComponent" :isFilterClicked="filterClicked"/>
         </div>
     </div>
 </template>

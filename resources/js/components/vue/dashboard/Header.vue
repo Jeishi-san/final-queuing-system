@@ -42,6 +42,20 @@
             el.style.transform = "translateX(1rem)";
         });
     };
+
+    const emit = defineEmits(['isFilterClicked']);
+
+    const isFilterClicked = ref(false);
+
+    const filterON = () => {
+        emit('isFilterClicked', true);
+        isFilterClicked.value = true;
+    };
+
+    const filterOFF = () => {
+        emit('isFilterClicked', false);
+        isFilterClicked.value = false;
+    };
 </script>
 
 <template>
@@ -91,6 +105,11 @@
                     </button>
                 </div>
             </transition>
+
+            <!-- Filter button -->
+            <button v-if="!isFilterClicked" @click="filterON" class="px-2 py-1 rounded bg-white text-[#003D5B]">Filter</button>
+            <button v-if="isFilterClicked" @click="filterOFF" class="px-2 py-1 rounded bg-red-500 text-white">Close Filter</button>
+
 
             <!-- Profile Icon -->
             <a href="/dashboard/my-profile" class="">
