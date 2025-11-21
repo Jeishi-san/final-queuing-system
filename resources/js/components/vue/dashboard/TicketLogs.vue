@@ -3,57 +3,86 @@
     <div class="bg-white rounded-2xl w-full max-w-lg p-6">
 
       <!-- Modal Title -->
-      <h2 class="text-xl font-semibold mb-4">
-        Ticket Logs
-      </h2>
+      <h2 class="text-xl font-semibold mb-4">Ticket Logs</h2>
 
-      <!-- Modal Body -->
-      <div class="space-y-2 max-h-[400px] overflow-y-auto">
-        <div v-for="log in logs" :key="log.id" class="border-b pb-2">
-          <div class="text-gray-700"><strong>{{ log.user }}</strong> - {{ formatDate(log.created_at) }}</div>
-          <div class="text-gray-500 text-sm">{{ log.action }}</div>
+      <!-- Logs Body -->
+      <div class="max-h-96 overflow-y-auto space-y-2">
+        <div
+          v-for="log in enrichedLogs"
+          :key="log.id"
+          class="p-2 border rounded bg-gray-100"
+        >
+          <div class="text-sm text-gray-500">{{ formatDate(log.created_at) }}</div>
+          <div class="text-base font-medium">{{ log.action }}</div>
+          <div class="text-sm text-gray-600">By: {{ log.user_name }}</div>
         </div>
-        <div v-if="logs.length === 0" class="text-center text-gray-500">No logs found.</div>
+
+        <div v-if="loading" class="text-center py-4 text-gray-700">Loading...</div>
+        <div v-if="!loading && logs.length === 0" class="text-center py-4 text-gray-700">No logs found.</div>
       </div>
 
-      <!-- Modal Footer -->
-      <div class="flex justify-end mt-4">
+      <!-- Footer -->
+      <div class="flex justify-end mt-6">
         <button
-          class="bg-[#003D5B] text-white px-4 py-2 rounded hover:bg-[#006873]"
+          class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
           @click="$emit('close')"
         >
           Close
         </button>
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch} from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
-  ticketId: [String, Number]
+  ticketId: {
+    type: Number,
+    required: true
+  }
 });
-const emit = defineEmits(['close']);
 
 const logs = ref([]);
+const enrichedLogs = ref([]); // logs + user info
+const users = ref([]);
+const loading = ref(true);
 
 const fetchLogs = async () => {
-  if (!props.ticketId) return;
+  loading.value = true;
   try {
-    const res = await axios.get(`/tickets/${props.ticketId}/logs`);
-    logs.value = res.data;
-  } catch (err) {
-    console.error('Failed to fetch ticket logs:', err);
+    // Fetch ticket logs
+    const resLogs = await axios.get(`/tickets/${props.ticketId}/logs`);
+    logs.value = resLogs.data;
+
+    // Fetch all users
+    const resUsers = await axios.get(`/users`);
+    users.value = resUsers.data;
+
+    // Map logs to include user name
+    enrichedLogs.value = logs.value.map(log => {
+      const user = users.value.find(u => u.id === log.user_id);
+      return {
+        ...log,
+        user_name: user ? user.name : 'Unknown'
+      };
+    });
+
+    console.log("Enriched logs:", enrichedLogs.value);
+
+  } catch (error) {
+    console.error('Failed to fetch ticket logs or users:', error);
+  } finally {
+    loading.value = false;
   }
 };
 
-watch(() => props.ticketId, fetchLogs, { immediate: true });
+onMounted(fetchLogs);
 
+// Helper to format date
 const formatDate = (iso) => {
-  if (!iso) return 'N/A';
   return new Date(iso).toLocaleString();
 };
 </script>

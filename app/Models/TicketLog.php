@@ -12,8 +12,7 @@ class TicketLog extends Model
     protected $fillable = [
         'ticket_id',
         'user_id',
-        'action',
-        'details'
+        'action'
     ];
 
     // Relationships
@@ -28,13 +27,12 @@ class TicketLog extends Model
     }
 
     // Static helper to add log
-    public static function add($ticketId, $userId, $action, $details)
+    public static function add($ticketId, $userId, $action)
     {
         return self::create([
             'ticket_id' => $ticketId,
             'user_id' => $userId,
-            'action' => $action,
-            'details' => $details
+            'action' => $action
         ]);
     }
 

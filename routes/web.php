@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketLogController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NotificationController;
 
@@ -83,6 +84,7 @@ Route::prefix('tickets')->group(function () {
 
     // Helper routes
     Route::post('{ticket}/add-log', [TicketController::class, 'addLog']); // Add log to ticket
+    Route::get('/{ticket}/logs', [TicketLogController::class, 'logsForTicket']);
     Route::get('status/{status}', [TicketController::class, 'filterByStatus']); // Filter by status
 });
 

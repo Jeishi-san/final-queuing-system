@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Ticket;
+use App\Models\TicketLog;
 use App\Models\Queue;
 use App\Http\Controllers\QueueController;
 
@@ -47,7 +48,7 @@ class TicketController extends Controller
             $query->whereDate('updated_at', '<=', $request->end_date);
         }
 
-        return $query->orderBy('ticket_number')->get();
+        return $query->orderBy('updated_at', 'desc')->get();
     }
 
     // Create a new ticket
@@ -94,6 +95,7 @@ class TicketController extends Controller
         return response()->json(['message' => 'Ticket deleted']);
     }
 
+    //unused
     // Add a ticket log
     public function addLog(Request $request, Ticket $ticket)
     {
@@ -129,33 +131,57 @@ class TicketController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string',
         ]);
 
         $ticket = Ticket::findOrFail($id);
-        $newStatus = $request->status;
 
-        $ticket->status = $newStatus;
+        $ticketLog_message = "";
+
+        if (isset($validated['status']) && $ticket->status != $validated['status']) {
+
+            if ($validated['status'] === 'queued') {
+                $this->addTicketToQueue($ticket);
+                $ticketLog_message = "Ticket validated and added to queue";
+            } elseif ($validated['status'] === 'in progress') {
+                $this->updateAssignedUser($ticket);
+                $ticketLog_message = "Ticket is being processed";
+            } elseif ($validated['status'] === 'resolved') {
+                $this->updateAssignedUser($ticket);
+                $ticketLog_message = "Ticket has been resolved";
+            } elseif ($validated['status'] === 'on hold') {
+                $this->updateAssignedUser($ticket);
+                $ticketLog_message = "Ticket has been put on hold";
+            } elseif ($validated['status'] === 'cancelled') {
+                $this->updateAssignedUser($ticket);
+                $ticketLog_message = "Ticket has been cancelled";
+            } else {
+                $this->updateAssignedUser($ticket);
+                $ticketLog_message = "Ticket status changed to " . $validated['status'];
+            }
+
+            // Log the status change
+            TicketLog::add(
+                $ticket->id,
+                auth('web')->id(),
+                $ticketLog_message
+            );
+
+            $ticket->status = $validated['status'];
+        }
+
         $ticket->save();
+    }
 
-        // When status changes *to* queued → add to queue
-        if ($newStatus === 'queued') {
-            $this->addTicketToQueue($ticket);
-        } else {
-            // Update assigned_to in the queue table
+    private function updateAssignedUser(Ticket $ticket) {
+        // Update assigned_to in the queue table
             $queue = Queue::where('ticket_id', $ticket->id)->first();
 
             if ($queue) {
                 $queue->assigned_to = auth('web')->id(); // who is updating the status
                 $queue->save();
             }
-        }
-
-        return response()->json([
-            'message' => 'Status updated',
-            'ticket' => $ticket
-        ]);
     }
 
     public function countQueuedTickets()

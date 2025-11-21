@@ -20,7 +20,6 @@ class TicketLogController extends Controller
             'ticket_id' => 'required|exists:tickets,id',
             'user_id' => 'required|exists:users,id',
             'action' => 'required|string',
-            'details' => 'required|string'
         ]);
 
         $log = TicketLog::add($validated['ticket_id'], $validated['user_id'], $validated['action'], $validated['details']);
