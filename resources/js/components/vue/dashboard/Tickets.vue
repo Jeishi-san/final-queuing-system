@@ -125,37 +125,14 @@
 
     </div>
 
-    <!-- Modal for full edit -->
-    <TicketModal v-if="selectedTicket" @close="selectedTicket = null">
-      <template #title>Edit Ticket</template>
-      <template #body>
-        <div class="flex flex-col space-y-2">
-          <label>Holder Name</label>
-          <input v-model="selectedTicket.holder_name" class="border rounded px-2 py-1" />
-
-          <label>Holder Email</label>
-          <input v-model="selectedTicket.holder_email" class="border rounded px-2 py-1" />
-
-          <label>Issue Type</label>
-          <input v-model="selectedTicket.issue" class="border rounded px-2 py-1" />
-        </div>
-      </template>
-      <template #footer>
-        <button
-          class="bg-[rgb(0,122,135)] text-white px-4 py-2 rounded hover:bg-[#006873]"
-          @click="saveTicket(selectedTicket)"
-        >
-          Save
-        </button>
-      </template>
-    </TicketModal>
+    <TicketLogs v-if="selectedTicket" :ticketId="selectedTicket.id" @close="selectedTicket = null" />
 
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
-import TicketModal from './UpdateTicket.vue';
+import TicketLogs from './TicketLogs.vue';
 
     const props = defineProps({
         isFilterClicked: Boolean,
@@ -232,9 +209,9 @@ const updateStatus = async (ticket) => {
   }
 };
 
-// Open modal for full edit
+// Open ticketlogs
 const openModal = (ticket) => {
-  selectedTicket.value = { ...ticket }; // clone to avoid immediate table change
+  selectedTicket.value = ticket;
 };
 
 // Save from modal
