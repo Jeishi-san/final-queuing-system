@@ -9,10 +9,10 @@ use App\Http\Controllers\QueueController;
 
 class TicketController extends Controller
 {
-    // List all tickets
+    // List ticket items by filters
     public function index(Request $request)
     {
-        $query = Ticket::query()->with(['assignedUser', 'queue']);
+        $query = Ticket::query();
 
         // Filter by ticket_number
         if ($request->ticket_number) {

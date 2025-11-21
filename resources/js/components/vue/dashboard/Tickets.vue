@@ -157,27 +157,16 @@
 import { ref, onMounted, nextTick } from 'vue';
 import TicketModal from './UpdateTicket.vue';
 
+    const props = defineProps({
+        isFilterClicked: Boolean,
+    });
+
 const style_header = "font-semibold text-[#003D5B]";
 const ticketList = ref([]);
 const loading = ref(true);
 const selectedTicket = ref(null);
 
 const highlightId = ref(null);
-
-const props = defineProps({
-    isFilterClicked: Boolean,
-});
-
-// FILTERS (SERVER-SIDE)
-    const filters = ref({
-        ticket_number: "",
-        holder_name: "",
-        holder_email: "",
-        issue: "",
-        status: "",
-        start_date: "",
-        end_date: "",
-    });
 
 const allStatuses = [
   'pending approval',
@@ -197,6 +186,16 @@ const allowedNext = {
   'cancelled': []
 };
 
+    // FILTERS (SERVER-SIDE)
+    const filters = ref({
+        queue_number: "",
+        ticket_number: "",
+        assigned_to: "",
+        status: "",
+        start_date: "",
+        end_date: "",
+    });
+
 // Logic: current is always valid; next allowed statuses are valid
 const isAllowedStatus = (current, target) => {
   if (current === target) return true; // Always allow current
@@ -210,7 +209,6 @@ const fetchTickets = async () => {
   try {
     const res = await axios.get('/tickets', { params: filters.value });
     ticketList.value = res.data;
-    console.log(res.data);
   } catch (error) {
     console.error('Error fetching tickets items:',error);
   } finally {
