@@ -55,14 +55,14 @@
                 </div>
 
                 <!-- (Optional Stats Placeholder) -->
-                <div class="mt-auto bg-gray-100 p-4 rounded-xl text-center">
+                <!-- <div class="mt-auto bg-gray-100 p-4 rounded-xl text-center">
                     <p class="font-medium text-[#003D5B]">
                         Tickets Handled: <span class="font-bold">{{ stats.ticketsHandled }}</span>
                     </p>
                     <p class="font-medium text-[#003D5B]">
                         Avg. Resolution Time: <span class="font-bold">{{ stats.avgResolutionTime }}</span>
                     </p>
-                </div>
+                </div> -->
             </div>
 
             <!-- RIGHT: Activity Log -->
