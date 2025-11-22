@@ -131,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed } from 'vue';
 import TicketLogs from './TicketLogs.vue';
 
     const props = defineProps({
@@ -173,10 +173,19 @@ const allowedNext = {
         end_date: "",
     });
 
+const inProgressCount = computed(() =>
+  ticketList.value.filter(t => t.status === 'in progress').length
+);
+
 // Logic: current is always valid; next allowed statuses are valid
 const isAllowedStatus = (current, target) => {
-  if (current === target) return true; // Always allow current
-  return allowedNext[current]?.includes(target);
+    //Block selecting "in progress" if 2 already exist
+    if (target === 'in progress' && inProgressCount.value >= 2) {
+        return false;
+    }
+
+    if (current === target) return true; // Always allow current
+    return allowedNext[current]?.includes(target);
 };
 
 
