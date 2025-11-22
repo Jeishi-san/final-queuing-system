@@ -19,6 +19,13 @@ use App\Http\Controllers\Auth\RegisterController;
 |
 */
 
+// -------------------- USER PROFILE ROUTES -------------------- //
+// ✅ ADDED: Routes for current user profile (these were missing)
+Route::prefix('user')->group(function () {
+    Route::get('/profile', [UserController::class, 'getCurrentUserProfile']);
+    Route::get('/activity-logs', [UserController::class, 'getCurrentUserActivityLogs']);
+});
+
 // -------------------- USER ROUTES -------------------- //
 Route::prefix('users')->group(function () {
 
@@ -35,6 +42,7 @@ Route::prefix('users')->group(function () {
     Route::get('{user}/tickets-handled', [UserController::class, 'ticketsHandled']);
     Route::get('{user}/average-resolution', [UserController::class, 'averageResolutionTime']);
     Route::get('{user}/activity-log', [UserController::class, 'activityLog']);
+
 });
 
 // -------------------- TICKET ROUTES -------------------- //
@@ -72,6 +80,13 @@ Route::prefix('activity-logs')->group(function () {
     // Helper routes
     Route::get('user/{userId}', [ActivityLogController::class, 'logsByUser']);   // Logs by user
     Route::get('ticket/{ticketId}', [ActivityLogController::class, 'logsByTicket']); // Logs by ticket
+    
+    // ✅ NEW: Activity Log chat routes
+    Route::post('chat/session/start', [ActivityLogController::class, 'startChatSession']);
+    Route::post('chat/session/{session}/end', [ActivityLogController::class, 'endChatSession']);
+    Route::get('chat/session/{session}/messages', [ActivityLogController::class, 'getChatSessionMessages']);
+    Route::get('chat/sessions/user/{userId}', [ActivityLogController::class, 'getUserChatSessions']);
+    Route::get('chat/sessions/ticket/{ticketId}', [ActivityLogController::class, 'getTicketChatSessions']);
 });
 
 // -------------------- TICKET LOG ROUTES -------------------- //

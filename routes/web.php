@@ -8,7 +8,6 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketLogController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NotificationController;
-
 use App\Http\Controllers\QueueController;
 
 Route::get('/', function () {
@@ -31,6 +30,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/my-profile', function () {
         return view('vue.admin.dashboard');
     })->name('profile');
+
+    // ✅ ADDED: Missing edit-profile route
+    Route::get('/dashboard/edit-profile', function () {
+        return view('vue.admin.dashboard');
+    })->name('edit-profile');
 
     Route::get('/dashboard/queue-list', function () {
         return view('vue.admin.dashboard');
@@ -61,7 +65,6 @@ Route::prefix('queues')->group(function () {
     Route::get('/list', [QueueController::class, 'index']);               // List all queue items
     Route::get('/inProgress', [QueueController::class, 'getInProgressQueues']);               // List queue items with in progress tickets
     Route::get('/waiting', [QueueController::class, 'getWaitingItems']);               // Get count of waiting tickets
-
 
     Route::post('/', [QueueController::class, 'store']);              // Add ticket to queue
     Route::get('{queue}', [QueueController::class, 'show']);          // Show queue item

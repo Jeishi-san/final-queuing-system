@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ActivityLogController extends Controller
 {
@@ -51,4 +53,36 @@ class ActivityLogController extends Controller
     {
         return response()->json(ActivityLog::byTicket($ticketId)->get());
     }
+
+    public function getUserActivityLogs(Request $request)
+{
+    try {
+        $user = Auth::user();
+        $perPage = $request->get('per_page', 15);
+
+        $activityLogs = $user->activityLogs()
+            ->with(['ticket' => function($query) {
+                $query->select('id', 'ticket_number', 'title');
+            }])
+            ->latest()
+            ->paginate($perPage);
+
+        return response()->json([
+            'activity_logs' => $activityLogs->items(),
+            'pagination' => [
+                'current_page' => $activityLogs->currentPage(),
+                'last_page' => $activityLogs->lastPage(),
+                'per_page' => $activityLogs->perPage(),
+                'total' => $activityLogs->total(),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching user activity logs: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to fetch activity logs',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }
