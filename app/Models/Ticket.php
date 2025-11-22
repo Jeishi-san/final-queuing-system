@@ -14,16 +14,10 @@ class Ticket extends Model
         'holder_email',
         'ticket_number',
         'issue',
-        'status',
-        'assigned_to'
+        'status'
     ];
 
     // Relationships
-    public function assignedUser()
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
-    }
-
     public function logs()
     {
         return $this->hasMany(TicketLog::class);

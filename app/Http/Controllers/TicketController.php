@@ -58,11 +58,17 @@ class TicketController extends Controller
             'holder_name' => 'required|string',
             'holder_email' => 'required|email',
             'ticket_number' => 'required|string|unique:tickets',
-            'issue' => 'required|string',
-            'status' => 'nullable|in:pending approval,queued,in progress,on hold,resolved,cancelled'
+            'issue' => 'required|string'
         ]);
 
         $ticket = Ticket::create($validated);
+
+        TicketLog::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => auth('web')->id() ?? null,   // or null if no login
+            'action'    => 'Ticket created by ' . $validated['holder_name'] .', ' . $validated['holder_email'],
+        ]);
+
         return response()->json($ticket, 201);
     }
 

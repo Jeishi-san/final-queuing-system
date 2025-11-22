@@ -3,7 +3,8 @@
     <div class="bg-white rounded-2xl w-full max-w-lg p-6">
 
       <!-- Modal Title -->
-      <h2 class="text-xl font-semibold mb-4">Ticket Logs</h2>
+      <h2 class="text-xl font-semibold mb-1">Ticket Logs</h2>
+      <h2 class="text-md mb-4">Ticket Number: <span class="font-semibold">{{ ticket?.ticket_number }}</span></h2>
 
       <!-- Logs Body -->
       <div class="max-h-96 overflow-y-auto space-y-2">
@@ -14,7 +15,7 @@
         >
           <div class="text-sm text-gray-500">{{ formatDate(log.created_at) }}</div>
           <div class="text-base font-medium">{{ log.action }}</div>
-          <div class="text-sm text-gray-600">By: {{ log.user_name }}</div>
+          <div v-if="log.user_name" class="text-sm text-gray-600">By: {{ log.user_name }}</div>
         </div>
 
         <div v-if="loading" class="text-center py-4 text-gray-700">Loading...</div>
@@ -45,6 +46,7 @@ const props = defineProps({
   }
 });
 
+const ticket = ref(null);
 const logs = ref([]);
 const enrichedLogs = ref([]); // logs + user info
 const users = ref([]);
@@ -53,6 +55,10 @@ const loading = ref(true);
 const fetchLogs = async () => {
   loading.value = true;
   try {
+    // 1. Fetch ticket details (to get ticket number)
+    const resTicket = await axios.get(`/tickets/${props.ticketId}`);
+    ticket.value = resTicket.data;
+
     // Fetch ticket logs
     const resLogs = await axios.get(`/tickets/${props.ticketId}/logs`);
     logs.value = resLogs.data;
@@ -66,7 +72,8 @@ const fetchLogs = async () => {
       const user = users.value.find(u => u.id === log.user_id);
       return {
         ...log,
-        user_name: user ? user.name : 'Unknown'
+        user_name: user ? user.name : null,
+        ticket_number: ticket.value.ticket_number
       };
     });
 
