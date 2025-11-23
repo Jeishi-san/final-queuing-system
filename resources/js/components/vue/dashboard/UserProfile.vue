@@ -39,21 +39,21 @@
 
                     <!-- Profile Actions -->
                     <div class="flex gap-2 mt-3">
-                        <button 
+                        <button
                             @click="navigateToEdit"
                             class="bg-[#003D5B] text-white text-sm px-4 py-2 rounded-xl hover:bg-[#004c73] transition flex items-center gap-2"
                         >
                             <FontAwesomeIcon :icon="['fas', 'pen-to-square']" />
                             Edit Profile
                         </button>
-                        <button 
+                        <button
                             @click="refreshAllData"
                             :disabled="loading || loadingLogs"
                             class="bg-gray-500 text-white text-sm px-4 py-2 rounded-xl hover:bg-gray-600 transition flex items-center gap-2 disabled:opacity-50"
                         >
-                            <FontAwesomeIcon 
-                                :icon="['fas', 'rotate']" 
-                                :class="{ 'animate-spin': loading || loadingLogs }" 
+                            <FontAwesomeIcon
+                                :icon="['fas', 'rotate']"
+                                :class="{ 'animate-spin': loading || loadingLogs }"
                             />
                             Refresh
                         </button>
@@ -81,32 +81,29 @@
                     <p class="font-medium text-[#003D5B]">
                         Avg. Resolution Time: <span class="font-bold">{{ userStats.average_resolution_time_human || 'No data' }}</span>
                     </p>
-                </div> 
+                </div>
             </div>
 
             <!-- RIGHT: Activity Log -->
             <div class="col-span-2 bg-white rounded-2xl shadow p-6 flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-[#003D5B]">Activity Log</h2>
-                    <button 
-                        @click="refreshActivityLogs" 
+                    <button
+                        @click="refreshActivityLogs"
                         :disabled="loadingLogs"
                         class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded flex items-center gap-2 transition disabled:opacity-50"
                     >
-                        <FontAwesomeIcon 
-                            :icon="['fas', 'rotate']" 
-                            :class="{ 'animate-spin': loadingLogs }" 
+                        <FontAwesomeIcon
+                            :icon="['fas', 'rotate']"
+                            :class="{ 'animate-spin': loadingLogs }"
                         />
                         Refresh
                     </button>
                 </div>
 
                 <div class="overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 rounded-lg">
-<<<<<<< Updated upstream
+
                     <table class="min-w-full text-s m">
-=======
-                    <table class="min-w-full text-sm">
->>>>>>> Stashed changes
                         <thead class="bg-gray-100 sticky top-0">
                             <tr>
                                 <th class="py-2 px-3 text-left font-semibold">Date</th>
@@ -207,7 +204,7 @@ const fetchUserProfile = async () => {
     try {
         loading.value = true;
         const response = await axios.get('/api/user/profile');
-        
+
         user.value = response.data;
         error.value = '';
     } catch (err) {
@@ -262,9 +259,9 @@ const navigateToEdit = () => {
 onMounted(async () => {
     // Check if we need to refresh data (coming from edit)
     const shouldRefresh = sessionStorage.getItem('profileUpdated') === 'true';
-    
+
     await refreshAllData();
-    
+
     // Clear the flag after refreshing
     if (shouldRefresh) {
         sessionStorage.removeItem('profileUpdated');
