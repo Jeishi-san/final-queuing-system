@@ -56,7 +56,7 @@ class TicketController extends Controller
             return $query->orderBy('created_at', 'asc')->take(5)->get();
         }
 
-        return $query->orderBy('created_at', 'asc')->get();
+        return $query->orderBy('created_at', 'asc')->orderBy('status')->get();
     }
 
     // Create a new ticket
