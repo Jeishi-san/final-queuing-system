@@ -67,7 +67,7 @@ class UserController extends Controller
 
         try {
             $userData = $request->only([
-                'name', 'email', 'employee_id', 'role', 
+                'name', 'email', 'employee_id', 'role',
                 'department', 'contact_number', 'account_status'
             ]);
             $userData['password'] = Hash::make($request->password);
@@ -398,7 +398,7 @@ class UserController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
@@ -444,7 +444,7 @@ class UserController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
@@ -453,7 +453,6 @@ class UserController extends Controller
 
             // Get activity logs for the current user
             $activityLogs = ActivityLog::where('user_id', $user->id)
-                ->with(['ticket', 'agent'])
                 ->latest()
                 ->paginate($perPage);
 

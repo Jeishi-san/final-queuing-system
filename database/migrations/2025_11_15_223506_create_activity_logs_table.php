@@ -15,14 +15,7 @@ return new class extends Migration {
                   ->constrained('users')
                   ->nullOnDelete();
 
-            // Ticket being acted upon
-            $table->foreignId('ticket_id')
-                  ->nullable()
-                  ->constrained('tickets')
-                  ->nullOnDelete();
-
             $table->string('action');
-            $table->text('details')->nullable();
             $table->timestamps();
         });
     }

@@ -11,9 +11,7 @@ class ActivityLog extends Model
 
     protected $fillable = [
         'user_id',
-        'ticket_id',
-        'action',
-        'details'
+        'action'
     ];
 
     // Relationships
@@ -22,19 +20,12 @@ class ActivityLog extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function ticket()
-    {
-        return $this->belongsTo(Ticket::class);
-    }
-
     // Static log helper
-    public static function log($userId, $ticketId, $action, $details)
+    public static function log($userId, $action)
     {
         return self::create([
             'user_id' => $userId,
-            'ticket_id' => $ticketId,
-            'action' => $action,
-            'details' => $details
+            'action' => $action
         ]);
     }
 
@@ -44,14 +35,9 @@ class ActivityLog extends Model
         return $query->where('user_id', $userId);
     }
 
-    public function scopeByTicket($query, $ticketId)
-    {
-        return $query->where('ticket_id', $ticketId);
-    }
-
     // Helper
     public function description()
     {
-        return "{$this->log_date}: {$this->action} - {$this->details}";
+        return "{$this->log_date}: {$this->action} by User ID {$this->user_id}s";
     }
 }

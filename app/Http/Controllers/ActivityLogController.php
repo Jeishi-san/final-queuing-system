@@ -20,9 +20,7 @@ class ActivityLogController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'ticket_id' => 'nullable|exists:tickets,id',
-            'action' => 'required|string',
-            'details' => 'required|string'
+            'action' => 'required|string'
         ]);
 
         $log = ActivityLog::create($validated);

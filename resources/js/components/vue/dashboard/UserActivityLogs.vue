@@ -13,21 +13,18 @@
             >
                 <FontAwesomeIcon
                     :icon="['fas', 'rotate']"
-                    :class="{ 'animate-spin': loadingLogs }"
-                />
+                    :class="{ 'animate-spin': loadingLogs }"/>
                 Refresh
             </button>
         </div>
 
         <!-- Scrollable Activity Table -->
         <div class="overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 rounded-lg">
-            <table class="min-w-full text-s m">
+            <table class="min-w-full text-sm">
                 <thead class="bg-gray-100 sticky top-0">
                     <tr>
                         <th class="py-2 px-3 text-left font-semibold">Date</th>
                         <th class="py-2 px-3 text-left font-semibold">Action</th>
-                        <th class="py-2 px-3 text-left font-semibold">Ticket ID</th>
-                        <th class="py-2 px-3 text-left font-semibold">Details</th>
                     </tr>
                 </thead>
 
@@ -39,11 +36,7 @@
                         class="border-b hover:bg-gray-50 transition"
                     >
                         <td class="py-2 px-3">{{ formatDateTime(log.created_at) }}</td>
-                        <td class="py-2 px-3 capitalize">{{ log.action_type || log.action }}</td>
-                        <td class="py-2 px-3 text-[#003D5B] font-semibold">
-                            {{ log.ticket?.ticket_number || log.ticket_id || 'N/A' }}
-                        </td>
-                        <td class="py-2 px-3">{{ log.description || log.details }}</td>
+                        <td class="py-2 px-3 capitalize">{{ log.action }}</td>
                     </tr>
 
                     <!-- Empty State -->

@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\ActivityLog;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -28,6 +29,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // LOG THE LOGIN ACTIVITY
+        $this->logActivity($request->user()->id, 'User logged in');
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -43,5 +47,14 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+
+    private function logActivity($userId, $action)
+    {
+        ActivityLog::create([
+            'user_id' => $userId,
+            'action'  => $action,
+        ]);
     }
 }
