@@ -204,11 +204,9 @@ const isAllowedStatus = (current, target) => {
 const fetchTickets = async () => {
   loading.value = true;
   try {
-
     const res = await axios.get('/tickets', { params: filters.value });
     ticketList.value = res.data;
     console.log('Fetched tickets items:', ticketList.value);
-
   } catch (error) {
     console.error('Error fetching tickets items:',error);
   } finally {
