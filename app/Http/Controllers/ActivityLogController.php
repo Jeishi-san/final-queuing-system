@@ -58,22 +58,23 @@ class ActivityLogController extends Controller
         $user = Auth::user();
         $perPage = $request->get('per_page', 15);
 
-        $activityLogs = $user->activityLogs()
-            ->with(['ticket' => function($query) {
-                $query->select('id', 'ticket_number', 'title');
-            }])
-            ->latest()
-            ->paginate($perPage);
+        //Commented because $user->activityLogs() is an error
+        // $activityLogs = $user->activityLogs()
+        //     ->with(['ticket' => function($query) {
+        //         $query->select('id', 'ticket_number', 'title');
+        //     }])
+        //     ->latest()
+        //     ->paginate($perPage);
 
-        return response()->json([
-            'activity_logs' => $activityLogs->items(),
-            'pagination' => [
-                'current_page' => $activityLogs->currentPage(),
-                'last_page' => $activityLogs->lastPage(),
-                'per_page' => $activityLogs->perPage(),
-                'total' => $activityLogs->total(),
-            ]
-        ]);
+        // return response()->json([
+        //     'activity_logs' => $activityLogs->items(),
+        //     'pagination' => [
+        //         'current_page' => $activityLogs->currentPage(),
+        //         'last_page' => $activityLogs->lastPage(),
+        //         'per_page' => $activityLogs->perPage(),
+        //         'total' => $activityLogs->total(),
+        //     ]
+        // ]);
 
     } catch (\Exception $e) {
         Log::error('Error fetching user activity logs: ' . $e->getMessage());
