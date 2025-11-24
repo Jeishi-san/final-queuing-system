@@ -13,16 +13,23 @@ const form = ref({
   password_confirmation: ''
 })
 
+const loading = ref(false);
+
 const register = async () => {
     if (form.value.password !== form.value.password_confirmation) {
         alert("Passwords do not match.");
         return;
     }
 
+    loading.value = true;
+
     try {
+        // First register the account
         const res = await axios.post('/api/users/create-account', form.value);
-        alert('Account registered successfully!')
-        console.log(res.data)
+        console.log('Registration successful:', res.data);
+        
+        // Then auto-login with the same credentials
+        await loginAfterRegistration();
         
     } catch (err) {
         console.error('Registration error:', err);
@@ -38,6 +45,40 @@ const register = async () => {
             alert('Cannot connect to server. Make sure Laravel Herd is running.');
         } else {
             alert('Registration failed! Check console for details.');
+        }
+    } finally {
+        loading.value = false;
+    }
+}
+
+// Auto-login function
+const loginAfterRegistration = async () => {
+    try {
+        // Use web login endpoint (not API)
+        await axios.post('/login', {
+            email: form.value.email,
+            password: form.value.password,
+            _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') // CSRF token for web forms
+        }, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        });
+        
+        // Redirect to dashboard after successful login
+        alert('Account created and logged in successfully!');
+        window.location.href = '/dashboard';
+        
+    } catch (loginErr) {
+        console.error('Auto-login failed:', loginErr);
+        
+        // If auto-login fails, show success message and redirect to login
+        if (loginErr.response?.status === 422) {
+            alert('Account created! Please login with your credentials.');
+            window.location.href = '/login';
+        } else {
+            alert('Account created successfully! Please login.');
+            window.location.href = '/login';
         }
     }
 }
@@ -61,8 +102,12 @@ const register = async () => {
                 <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" required :class="style_input" />
             </div>
 
-            <button type="submit" class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#004c73]">
-                Register
+            <button 
+                type="submit" 
+                :disabled="loading"
+                class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#004c73] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {{ loading ? 'Registering...' : 'Register' }}
             </button>
             </form>
 
@@ -71,7 +116,6 @@ const register = async () => {
             </p>
             <a href="/">    
             <button
-                @click="$emit('prev_page')"
                 class="fixed bottom-5 left-5 text-white p-1 px-2 shadow-xl rounded-2xl hover:bg-[#029cda] transition"
             >
                 <span class="font-bold text-xl">
