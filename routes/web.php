@@ -47,7 +47,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // -------------------- USER ROUTES -------------------- //
 Route::prefix('users')->group(function () {
-    Route::get('/', [UserController::class, 'index']);                  // List all users
+    Route::get('/', [UserController::class, 'getUsers']);                  // List all users
     Route::post('/', [UserController::class, 'store']);                 // Create new user
     Route::get('{user}', [UserController::class, 'show']);              // Show user details
     Route::put('{user}', [UserController::class, 'update']);            // Update user

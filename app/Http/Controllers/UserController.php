@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
+    // get all users
+    public function getUsers()
+    {
+        return response()->json(User::all());
+    }
+
     // List all users with pagination and relationships
     public function index(Request $request)
     {
@@ -404,9 +410,9 @@ class UserController extends Controller
             }
 
             // Load user with recent activity and relationships
-            $user->load(['activityLogs' => function($query) {
-                $query->latest()->limit(10);
-            }]);
+            // $user->load(['activityLogs' => function($query) {
+            //     $query->latest()->limit(10);
+            // }]); -----------------> block commented because $user->load(... is an error
 
             return response()->json([
                 'user' => $user,
