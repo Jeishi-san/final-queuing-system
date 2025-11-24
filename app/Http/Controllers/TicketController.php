@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Ticket;
 use App\Models\TicketLog;
 use App\Models\Queue;
+use App\Models\ActivityLog;
 use App\Http\Controllers\QueueController;
+
 
 class TicketController extends Controller
 {
@@ -174,6 +176,12 @@ class TicketController extends Controller
                 $ticketLog_message
             );
 
+            // Log user activity
+            $this->logActivity(
+                auth('web')->id(),
+                "Updated status of ticket #{$ticket->ticket_number} to {$validated['status']}"
+            );
+
             $ticket->status = $validated['status'];
         }
 
@@ -201,6 +209,14 @@ class TicketController extends Controller
         $resolved = Ticket::where('status', 'resolved')->count();
 
         return response()->json(['queued_tickets' => $count, 'waiting'=> $queued, 'resolved_tickets' => $resolved]);
+    }
+
+    private function logActivity($userId, $action)
+    {
+        ActivityLog::create([
+            'user_id' => $userId,
+            'action'  => $action,
+        ]);
     }
 
 }
