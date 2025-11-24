@@ -75,14 +75,14 @@
                         <span :class="iconClass">
                             <FontAwesomeIcon :icon="['fas', 'gauge']" />
                         </span>Dashboard</a>
-                    <a href="/dashboard/tickets" :class="navLinkClass">
-                        <span :class="iconClass">
-                            <FontAwesomeIcon :icon="['fas', 'ticket']" />
-                        </span>Tickets</a>
                     <a href="/dashboard/queue-list" :class="navLinkClass">
                         <span :class="iconClass">
                             <FontAwesomeIcon :icon="['fas', 'people-line']" />
                         </span>Queue List</a>
+                    <a href="/dashboard/tickets" :class="navLinkClass">
+                        <span :class="iconClass">
+                            <FontAwesomeIcon :icon="['fas', 'ticket']" />
+                        </span>Tickets</a>
                     <a href="/queue" :class="navLinkClass">
                         <span :class="iconClass">
                             <FontAwesomeIcon :icon="['fas', 'desktop']" />
