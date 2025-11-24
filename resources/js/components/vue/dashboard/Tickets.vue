@@ -12,6 +12,7 @@
           v-model="filters.ticket_number"
           placeholder="Search Ticket No."
           class="p-2 rounded border w-1/3"
+          :disabled="filters.nextQueued"
         />
 
         <!-- Holder Name -->
@@ -19,6 +20,7 @@
           v-model="filters.holder_name"
           placeholder="Search Name"
           class="p-2 rounded border w-1/3"
+          :disabled="filters.nextQueued"
         />
 
         <!-- Holder Email -->
@@ -26,12 +28,13 @@
           v-model="filters.holder_email"
           placeholder="Search Email"
           class="p-2 rounded border w-1/3"
+          :disabled="filters.nextQueued"
         />
 
         <!-- Date Range -->
         <label class="flex items-center gap-2">
           From
-          <input type="date" v-model="filters.start_date" class="p-2 rounded border">
+          <input type="date" v-model="filters.start_date" class="p-2 rounded border" :disabled="filters.nextQueued">
         </label>
 
         <!-- Apply Filters Button -->
@@ -46,18 +49,25 @@
           v-model="filters.issue"
           placeholder="Search Issue"
           class="p-2 rounded border w-1/3"
+          :disabled="filters.nextQueued"
         />
 
         <!-- Status -->
-        <select v-model="filters.status" class="p-2 rounded border w-1/3">
+        <select v-model="filters.status" class="p-2 rounded border w-1/3" :disabled="filters.nextQueued">
           <option value="">All statuses</option>
           <option v-for="s in allStatuses" :key="s" :value="s">{{ s }}</option>
         </select>
 
+        <!-- Radio Button: Show next in line tickets -->
+        <label class="p-2 w-1/3">
+            <input type="radio" v-model="filters.nextQueued" :value="true">
+            Show next in line queued tickets
+        </label>
+
         <!-- Date Range -->
         <label class="flex items-center gap-7">
           To
-          <input type="date" v-model="filters.end_date" class="p-2 rounded border">
+          <input type="date" v-model="filters.end_date" class="p-2 rounded border" :disabled="filters.nextQueued">
         </label>
 
         <!-- Reset Filters Button -->
@@ -171,6 +181,7 @@ const allowedNext = {
         status: "",
         start_date: "",
         end_date: "",
+        nextQueued: false,
     });
 
 const inProgressCount = computed(() =>
@@ -193,8 +204,11 @@ const isAllowedStatus = (current, target) => {
 const fetchTickets = async () => {
   loading.value = true;
   try {
+
     const res = await axios.get('/tickets', { params: filters.value });
     ticketList.value = res.data;
+    console.log('Fetched tickets items:', ticketList.value);
+
   } catch (error) {
     console.error('Error fetching tickets items:',error);
   } finally {

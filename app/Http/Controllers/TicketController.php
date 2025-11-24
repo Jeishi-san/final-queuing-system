@@ -50,7 +50,13 @@ class TicketController extends Controller
             $query->whereDate('updated_at', '<=', $request->end_date);
         }
 
-        return $query->orderBy('updated_at', 'desc')->get();
+        // Filter by next in line queued tickets
+        if ($request->nextQueued) {
+            $query->where('status', 'queued');
+            return $query->orderBy('created_at', 'asc')->take(5)->get();
+        }
+
+        return $query->orderBy('created_at', 'asc')->get();
     }
 
     // Create a new ticket
