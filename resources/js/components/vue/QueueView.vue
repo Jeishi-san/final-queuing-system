@@ -7,6 +7,7 @@
     import NextInLine from './cards//NextInLine.vue';
     import AddTicket from './AddTicket.vue';
     import TicketSubmitted from './tools/TicketSubmitted.vue';
+    import FailedTicketSubmission from './tools/UnsuccessfulTicketSubmission.vue';
 
     import icon from '../../../assets/img/login-icon.png';
 
@@ -15,6 +16,7 @@
 
     const showAddTicket = ref(false);
     const ticketSubmitted = ref(false);
+    const failedTicketSubmitted = ref(false);
 
     // keep timer ids to clear if component unmounts
     let showTimer = null;

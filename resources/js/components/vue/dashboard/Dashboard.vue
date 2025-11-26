@@ -30,7 +30,7 @@ const isSidebarOpen = ref(true);
 
 const pageName = {
     "/dashboard/tickets": "Tickets",
-    "/dashboard/queue-list": "Queue", 
+    "/dashboard/queue-list": "Queue",
     "/dashboard/my-profile": "Profile",
     "/dashboard/edit-profile": "Edit Profile"
 }[window.location.pathname] || "Dashboard";
@@ -47,7 +47,7 @@ const pageName = {
             <Header @isFilterClicked="filterON" :pageName="pageName"></Header>
 
             <!-- Content Area - Made scrollable -->
-            <main class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+            <main class="flex-1 overflow-">
                 <component :is="CurrentComponent" :isFilterClicked="filterClicked"/>
             </main>
         </div>
