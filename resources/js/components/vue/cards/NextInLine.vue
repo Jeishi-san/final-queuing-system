@@ -7,10 +7,16 @@
             Loading...
         </div>
 
-        <div class="mt-5 space-y-6 text-7xl font-bold text-[#003D5B]">
-            <h1 v-for="queue in queueList" :key="queue.id">
-                {{ queue.queue_number }} <!-- replace with your column -->
-            </h1>
+        <div class="mt-4 space-y-2">
+            <div v-for="queue in enrichedQueue" :key="queue.id" class="flex flex-col items-center">
+                <h1 class="text-6xl font-bold text-[#003D5B]">
+                    {{ queue.queue_number }}
+                </h1>
+                <p class="text-base text-gray-700 mt-1">Ticket Number:
+                    <span class="font-medium">{{ queue.ticket_number }}</span>
+                </p>
+                <div class="h-[1px] w-[500px] bg-gray-300"></div>
+            </div>
         </div>
 
     </div>
@@ -20,13 +26,30 @@
     import { ref, onMounted } from "vue";
 
     const queueList = ref([]); // reactive array to store queue data
+    const enrichedQueue = ref([]); // reactive array to store enriched queue data
+    const tickets = ref([]);         // all tickets (to get ticket_number)
 
     // Fetch queue data from backend API when component mounts
     onMounted(async () => {
         try {
-            const response = await axios.get('/queues'); // <-- your API endpoint
-            queueList.value = response.data; // assume response.data is an array of tickets
-            console.log(queueList.value);
+            // Fetch queue list
+            const resQueues = await axios.get('/queues/waiting'); // <-- your API endpoint
+            queueList.value = resQueues.data;
+
+            // Fetch tickets
+            const resTickets = await axios.get('/tickets');
+            tickets.value = resTickets.data;
+
+            // Map logs to include ticket number
+            enrichedQueue.value = queueList.value.map(queue => {
+                const ticket = tickets.value.find(t => t.id === queue.ticket_id);
+
+                return {
+                    ...queue,
+                    ticket_number: ticket ? ticket.ticket_number : null
+                };
+            });
+            console.log(enrichedQueue.value);
         } catch (error) {
             console.error("Failed to fetch queue:", error);
         }

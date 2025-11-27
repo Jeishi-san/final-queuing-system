@@ -15,7 +15,7 @@
       </transition>
     </div>
 
-    <!-- Ticket ID (static) -->
+    <!-- Ticket ID -->
     <div class="mt-1">
       <p :class="[style_p]">
         Ticket Number:
@@ -24,7 +24,7 @@
       <!-- text-base text-gray-700 -->
     </div>
 
-    <!-- IT Staff (static) -->
+    <!-- IT Staff  -->
     <div>
       <p :class="[style_p]">
         Attended by:
