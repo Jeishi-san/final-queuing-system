@@ -87,7 +87,7 @@
             <!-- LEFT SIDE -->
             <div class="flex flex-col w-full space-y-10">
                 <InProgress
-                    :queueNum="inProgress[0]?.queue_number?? 'nothing yet'"
+                    :queueNum="inProgress[0]?.queue_number?? 'none'"
                     :ticketId="inProgress[0]?.ticket.ticket_number?? 'none'"
                     :itStaff="inProgress[0]?.assigned_user.name?? 'none'"
                     style_div="w-[95%] h-65 bg-white rounded-3xl items-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)]"
@@ -95,7 +95,7 @@
                     style_h1="text-8xl font-bold text-[#003D5B] my-5"
                     style_p="text-base text-gray-700"/> <!-- In Progress Ticket Card 1 -->
                 <InProgress
-                    :queueNum="inProgress[1]?.queue_number?? 'nothing yet'"
+                    :queueNum="inProgress[1]?.queue_number?? 'none'"
                     :ticketId="inProgress[1]?.ticket.ticket_number?? 'none'"
                     :itStaff="inProgress[1]?.assigned_user.name?? 'none'"
                     style_div="w-[95%] h-65 bg-white rounded-3xl"

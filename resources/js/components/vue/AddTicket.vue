@@ -62,27 +62,6 @@
                 />
             </div>
 
-            <!-- Issue Type Textarea -->
-            <div class="relative">
-                <textarea
-                    id="issue"
-                    v-model="form.issue"
-                    placeholder="Describe the issue..."
-                    required
-                    class="w-full pl-3 pr-3 py-2
-                        bg-[#003D5B]/20 text-[#003D5B]
-                        rounded-lg
-                        border border-transparent
-                        hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
-                        focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
-                        placeholder-[#003D5B]/70
-                        transition-all duration-300
-                        resize-none"
-                    rows="4"
-                ></textarea>
-            </div>
-
-
             <!-- Submit Button -->
             <button
                 type="submit"
@@ -108,7 +87,7 @@
         holder_name: "",
         holder_email: "",
         ticket_number: "",
-        issue: "",
+        issue: "not applicable",
         status: "pending approval"
     });
 

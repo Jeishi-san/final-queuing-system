@@ -79,11 +79,10 @@
     <div class="w-full max-w-[1100px] flex flex-col shadow-lg rounded-3xl overflow-hidden">
 
       <!-- Table Header -->
-      <div class="grid grid-cols-[150px_120px_200px_150px_160px_90px] bg-gray-200 p-3">
+      <div class="grid grid-cols-[150px_120px_200px_160px_90px] bg-gray-200 p-3">
         <div :class="style_header">Ticket Number</div>
         <div :class="style_header">Holder Name</div>
         <div :class="style_header">Email</div>
-        <div :class="style_header">Issue</div>
         <div :class="style_header">Date Added</div>
         <div :class="style_header">Status</div>
       </div>
@@ -94,7 +93,7 @@
             v-for="ticket in ticketList"
             :key="ticket.id"
             :class="[
-                'grid grid-cols-[150px_120px_200px_150px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer',
+                'grid grid-cols-[150px_120px_200px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer',
                 ticket.id == highlightId ? 'bg-[#029cda]' : 'hover:bg-gray-100']"
 
             ref="ticketRows"
@@ -103,7 +102,6 @@
           <div>{{ ticket.ticket_number }}</div>
           <div>{{ ticket.holder_name }}</div>
           <div>{{ ticket.holder_email }}</div>
-          <div>{{ ticket.issue }}</div>
           <div>{{ formatDate(ticket.created_at) }}</div>
 
           <!-- Status inline dropdown -->

@@ -6,7 +6,7 @@
             <div class="w-[50%] overflow-hidden relative  bg-white rounded-3xl p-5">
                 <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">In Progress</h3>
                 <div v-if="inProgressList.length == 0" class="flex flex-col justify-center items-center">
-                    <h1 class="text-7xl font-bold text-[#003D5B] my-2">nothing yet</h1>
+                    <h1 class="text-7xl font-bold text-[#003D5B] my-2">none</h1>
                 </div>
                 <div v-if="inProgressList.length > 0" class="flex flex-col justify-center items-center">
                     <!-- Animate Queue Number -->
