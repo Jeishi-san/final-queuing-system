@@ -2,7 +2,7 @@
   <div class="flex flex-col h-[calc(100vh-100px)] w-full justify-start items-center px-10 py-5 box-border">
 
     <!-- FILTER BAR -->
-    <div v-if="isFilterClicked" class="w-full mb-4 p-3 bg-white rounded-xl shadow-sm">
+    <div v-if="isFilterClicked" class="w-full max-w-[1100px] mb-4 p-3 bg-white rounded-xl shadow-sm">
 
       <!-- Row 1 -->
       <div class="flex gap-4 justify-between">
@@ -79,7 +79,7 @@
     <div class="w-full max-w-[1100px] flex flex-col shadow-lg rounded-3xl overflow-hidden">
 
       <!-- Table Header -->
-      <div class="grid grid-cols-[150px_120px_200px_160px_90px] bg-gray-200 p-3">
+      <div :class="[grid_cols, 'bg-gray-200 p-3']">
         <div :class="style_header">Ticket Number</div>
         <div :class="style_header">Holder Name</div>
         <div :class="style_header">Email</div>
@@ -93,7 +93,7 @@
             v-for="ticket in ticketList"
             :key="ticket.id"
             :class="[
-                'grid grid-cols-[150px_120px_200px_160px_90px] border-b p-3 hover:bg-gray-100 cursor-pointer',
+                grid_cols, 'border-b p-3 hover:bg-gray-100 cursor-pointer',
                 ticket.id == highlightId ? 'bg-[#029cda]' : 'hover:bg-gray-100']"
 
             ref="ticketRows"
@@ -145,6 +145,8 @@ import TicketLogs from './TicketLogs.vue';
     const props = defineProps({
         isFilterClicked: Boolean,
     });
+
+const grid_cols = "grid grid-cols-[200px_200px_200px_200px_200px_auto] gap-4";
 
 const style_header = "font-semibold text-[#003D5B]";
 const ticketList = ref([]);

@@ -2,7 +2,7 @@
   <div class="flex flex-col items-center h-[calc(100vh-100px)] w-full px-10 py-5 box-border">
 
     <!-- FILTER BAR -->
-    <div v-if="isFilterClicked" class="w-full mb-4 p-3 bg-white rounded-xl shadow-sm">
+    <div v-if="isFilterClicked" class="w-full max-w-6xl mb-4 p-3 bg-white rounded-xl shadow-sm">
 
       <!-- Row 1 -->
       <div class="flex gap-4 justify-between">
@@ -62,7 +62,7 @@
     <div class="w-full max-w-6xl flex flex-col shadow-lg rounded-3xl overflow-hidden h-full">
 
       <!-- Table Header -->
-      <div class="grid grid-cols-5 gap-3 bg-gray-200 p-3 rounded-t-2xl">
+      <div :class="[grid_cols, 'bg-gray-200 p-3 rounded-t-2xl']">
         <div :class="style_header">Queue No.</div>
         <div :class="style_header">Ticket Number</div>
         <div :class="style_header">Assigned to</div>
@@ -75,7 +75,7 @@
         <div
           v-for="queue in queueList"
           :key="queue.id"
-          class="grid grid-cols-5 gap-3 border-b p-3 hover:bg-gray-100 cursor-pointer"
+          :class="[grid_cols, 'border-b p-3 hover:bg-gray-100 cursor-pointer']"
           @click="goToTicket(queue.ticket?.id)"
         >
             <div>{{ queue.queue_number }}</div>
@@ -101,6 +101,7 @@
     import { ref, onMounted } from 'vue';
 
     const style_header = "font-semibold text-[#003D5B]";
+    const grid_cols = "grid grid-cols-[200px_200px_180px_220px_200px_auto] gap-4";
 
     const props = defineProps({
       isFilterClicked: Boolean,

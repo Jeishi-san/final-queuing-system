@@ -87,10 +87,10 @@
                         <span :class="iconClass">
                             <FontAwesomeIcon :icon="['fas', 'desktop']" />
                         </span>Queue Display</a>
-                    <a href="/dashboard/generate-reports" :class="navLinkClass">
+                    <!-- <a href="/dashboard/generate-reports" :class="navLinkClass">
                         <span :class="iconClass">
                             <FontAwesomeIcon :icon="['far', 'file']" />
-                        </span>Generate a Report</a>
+                        </span>Generate a Report</a> -->
                 </ul>
 
                 <h3 class="px-10">ACCOUNT</h3>

@@ -53,8 +53,7 @@
                         >
                             <FontAwesomeIcon
                                 :icon="['fas', 'rotate']"
-                                :class="{ 'animate-spin': loading || loadingLogs }"
-                            />
+                                :class="{ 'animate-spin': loading || loadingLogs }"/>
                             Refresh
                         </button>
                     </div>
@@ -103,7 +102,7 @@
                     </button>
                 </div>
 
-                <div class="overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 rounded-lg">
+                <div class="overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 rounded-lg">
 
                     <table class="min-w-full text-sm">
                         <thead class="bg-gray-100 sticky top-0">

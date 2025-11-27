@@ -79,7 +79,7 @@
                 </div>
 
                 <!-- Table Rows: data must be fetch from db -->
-                 <div class="max-h-64 overflow-y-auto rounded-b-2xl">
+                 <div class="h-full overflow-y-auto rounded-b-2xl">
                     <div
                         v-for="queue in queueList"
                         :key="queue.id"
@@ -91,7 +91,6 @@
                         <div>{{ queue.ticket?.issue}}</div>
                     </div>
                 </div>
-                <!-- More rows can be added similarly -->
             </div>
 
         </div>
