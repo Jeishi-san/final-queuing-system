@@ -58,7 +58,7 @@ function onLoginSuccess() {
     <!-- Your existing template remains the same -->
     <div class="flex items-center justify-center">
         <div class="min-h-screen w-[325px] flex items-center justify-center">
-            <div class="flex flex-col items-center w-full max-w-sm h-[420px] bg-white rounded-[15px] shadow-[0_10px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 ">
+            <div class="flex flex-col items-center w-full max-w-sm h-[440px] bg-white rounded-[15px] shadow-[0_10px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 ">
                 <!-- Icon -->
                 <div class="flex justify-center mb-1">
                     <a href="/">
@@ -128,7 +128,7 @@ function onLoginSuccess() {
                     </button>
                 </form>
 
-                <p class="text-sm mt-4">
+                <p class="text-sm my-4">
                     Don't have an account?
                     <a href="/register" class="text-blue-600 hover:underline">Register here</a>
                 </p>

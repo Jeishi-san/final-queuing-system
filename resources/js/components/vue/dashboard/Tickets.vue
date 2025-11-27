@@ -225,7 +225,7 @@ const resetFilters = () => {
 const updateStatus = async (ticket) => {
   try {
     const response = await axios.put(`/tickets/${ticket.id}`, { status: ticket.status });
-    console.log(response.data);
+    console.log("Status Updated", response.data.value);
   } catch (error) {
     console.error('Failed to update status:', error);
   }
@@ -237,16 +237,16 @@ const openModal = (ticket) => {
 };
 
 // Save from modal
-const saveTicket = async (ticket) => {
-  try {
-    await axios.put(`/tickets/${ticket.id}`, ticket);
-    const idx = ticketList.value.findIndex(t => t.id === ticket.id);
-    if (idx !== -1) ticketList.value[idx] = { ...ticket };
-    selectedTicket.value = null;
-  } catch (error) {
-    console.error('Failed to save ticket:', error);
-  }
-};
+// const saveTicket = async (ticket) => {
+//   try {
+//     await axios.put(`/tickets/${ticket.id}`, ticket);
+//     const idx = ticketList.value.findIndex(t => t.id === ticket.id);
+//     if (idx !== -1) ticketList.value[idx] = { ...ticket };
+//     selectedTicket.value = null;
+//   } catch (error) {
+//     console.error('Failed to save ticket:', error);
+//   }
+// };
 
 onMounted(fetchTickets);
 

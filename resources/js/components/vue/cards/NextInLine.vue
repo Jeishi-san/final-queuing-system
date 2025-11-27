@@ -1,7 +1,7 @@
 <template>
     <div class="w-[95%] 100vh bg-white rounded-3xl flex flex-col items-center text-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] p-5">
 
-        <h3 class="text-3xl font-bold text-[#003D5B]">Next in Line</h3>
+        <h3 class="text-3xl font-bold text-[#003D5B]">Waiting</h3>
 
         <div v-if="queueList.length == 0" class="mt-24 text-7xl font-bold text-[#003D5B]">
             Loading...

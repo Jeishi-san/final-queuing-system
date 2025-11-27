@@ -27,13 +27,13 @@ const register = async () => {
         // First register the account
         const res = await axios.post('/api/users/create-account', form.value);
         console.log('Registration successful:', res.data);
-        
+
         // Then auto-login with the same credentials
         await loginAfterRegistration();
-        
+
     } catch (err) {
         console.error('Registration error:', err);
-        
+
         if (err.response?.data?.errors) {
             const errors = err.response.data.errors;
             let errorMessage = 'Registration failed:\n';
@@ -64,14 +64,14 @@ const loginAfterRegistration = async () => {
                 'Content-Type': 'application/x-www-form-urlencoded',
             }
         });
-        
+
         // Redirect to dashboard after successful login
         alert('Account created and logged in successfully!');
         window.location.href = '/dashboard';
-        
+
     } catch (loginErr) {
         console.error('Auto-login failed:', loginErr);
-        
+
         // If auto-login fails, show success message and redirect to login
         if (loginErr.response?.status === 422) {
             alert('Account created! Please login with your credentials.');
@@ -86,26 +86,26 @@ const loginAfterRegistration = async () => {
 
 <template>
     <div class="min-h-screen flex items-center justify-center">
-        <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow">
+        <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-[0_10px_100px_20px_rgba(0,0,0,0.3)]">
             <h2 class="text-2xl font-bold mb-4 text-center">Register Account</h2>
 
             <form @submit.prevent="register">
             <div class="space-y-3">
                 <input v-model="form.name" type="text" placeholder="Full Name" required :class="style_input" />
-                
+
                 <input v-model="form.role" type="text" placeholder="Role" required :class="style_input" />
-                
+
                 <input v-model="form.email" type="email" placeholder="Email" required :class="style_input" />
                 <input v-model="form.employee_id" type="text" placeholder="Employee ID" required :class="style_input" />
-                
+
                 <input v-model="form.password" type="password" placeholder="Password" required :class="style_input" />
                 <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" required :class="style_input" />
             </div>
 
-            <button 
-                type="submit" 
+            <button
+                type="submit"
                 :disabled="loading"
-                class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#004c73] disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#029cda] disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {{ loading ? 'Registering...' : 'Register' }}
             </button>
@@ -114,7 +114,7 @@ const loginAfterRegistration = async () => {
             <p class="text-center text-sm mt-4">
                 Already have an account? <a href="/login" class="text-blue-600 hover:underline">Login here</a>
             </p>
-            <a href="/">    
+            <a href="/">
             <button
                 class="fixed bottom-5 left-5 text-white p-1 px-2 shadow-xl rounded-2xl hover:bg-[#029cda] transition"
             >

@@ -40,6 +40,24 @@
         }, 1)
     }
 
+    function handleFailedTicketSubmission() {
+        showAddTicket.value = false;
+
+        // clear any existing timers
+        clearTimeout(showTimer);
+        clearTimeout(hideTimer);
+
+        // show failed after 1 ms
+        showTimer = setTimeout(() => {
+            failedTicketSubmitted.value = true;
+
+            // hide failed after 2 seconds
+            hideTimer = setTimeout(() => {
+                failedTicketSubmitted.value = false
+            }, 2000)
+        }, 1)
+    }
+
     onBeforeUnmount(() => {
         clearTimeout(showTimer);
         clearTimeout(hideTimer);
@@ -142,6 +160,7 @@
                 <AddTicket
                     v-if="showAddTicket"
                     @submitted="handleTicketSubmitted"
+                    @failed="handleFailedTicketSubmission"
                 />
 
             </transition>
@@ -158,8 +177,9 @@
                 </span>
             </button>
 
-            <!-- Ticket Submitted Modal -->
+            <!-- Ticket Submitted Modals -->
             <TicketSubmitted v-if="ticketSubmitted"/>
+            <FailedTicketSubmission v-if="failedTicketSubmitted"/>
         </aside>
 
         <a href="/">

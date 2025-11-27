@@ -5,7 +5,8 @@
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center">
     <div class="text-center space-y-4">
-      <h1 class="text-4xl font-bold text-white">Welcome to IT OPS Queuing System</h1>
+      <h1 class="text-4xl font-bold text-white">Welcome to enQ</h1>
+      <h1 class="text-2xl font-bold text-white">The Concentrix IT Operations Queuing System</h1>
       <p class="text-lg text-white">
         Monitor queues and streamline IT operations seamlessly.
       </p>

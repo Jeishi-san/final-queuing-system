@@ -81,7 +81,7 @@
 <script setup>
     import { ref } from "vue";
 
-    const emit = defineEmits(['submitted']);
+    const emit = defineEmits(['submitted', 'failed']);
 
     const form = ref({
         holder_name: "",
@@ -105,7 +105,10 @@
             //window.location.href = "/queue";
         } catch (error) {
             if (error.response) {
-            console.error("Adding failed:", error.response.data);
+                setTimeout(() => {
+                    emit('failed') // tell the parent submission is successful
+                }, 500);
+                console.error("Adding failed:", error.response.data);
             } else {
             console.error("Error:", error);
             }
