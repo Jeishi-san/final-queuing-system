@@ -11,15 +11,15 @@
         >
             <div
                 class="
-                    fixed inset-0 bg-[#fa2f2f] transition-opacity backdrop-blur-lg z-1
+                    fixed inset-0 bg-white/50 transition-opacity backdrop-blur-lg z-1
                     flex flex-col justify-center items-center space-y-5"
             >
                 <!-- Check icon -->
-                <span class="text-white">
+                <span class="text-[#fd1b1b]">
                     <FontAwesomeIcon :icon="['fas', 'exclamation']" class="text-[250px]"/>
                 </span>
 
-                <p class="text-5xl font-bold text-white">Ticket Number Already Exists</p>
+                <p class="text-5xl font-bold text-[#fd1b1b]">Ticket Number Already Exists</p>
             </div>
 
         </transition>
