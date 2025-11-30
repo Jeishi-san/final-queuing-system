@@ -57,9 +57,71 @@
       </div>
     </div>
 
+    <!-- MANAGE VIEW - Table Container -->
+    <div v-if="isManageClicked" class="w-full max-w-6xl flex flex-col shadow-lg overflow-hidden h-full">
+
+        <div class="flex justify-between items-center">
+            <h2 class="text-white text-3xl font-semibold mb-5">Managing Queue Items...</h2>
+            <button v-if="queueList.some(q => q.delete_ready)" @click="delete_queue_items" class="px-2 py-1 rounded bg-red-500 text-white">Delete Items</button>
+        </div>
+
+        <!-- Table Header -->
+        <div :class="[manage_grid_cols, 'bg-gray-200 p-3 rounded-t-2xl']">
+            <button v-if="!selectAll" @click="selectAll = true">
+                <span class="text-[#003D5B] text-lg">
+                    <FontAwesomeIcon :icon="['far', 'square']"/>
+                </span>
+            </button>
+            <button v-else @click="selectAll = false">
+                <span class="text-[#003D5B] text-lg">
+                    <FontAwesomeIcon :icon="['fas', 'square-check']"/>
+                </span>
+            </button>
+
+            <div :class="style_header">Queue No.</div>
+            <div :class="style_header">Ticket Number</div>
+            <div :class="style_header">Assigned to</div>
+            <div :class="style_header">Last Modified</div>
+            <div :class="style_header">Status</div>
+        </div>
+
+        <!-- Table Rows -->
+        <div class="overflow-y-auto bg-[#99bbc4] flex-1 max-h-[calc(100vh-160px)]">
+            <div
+                v-for="queue in queueList"
+                :key="queue.id"
+                :class="[manage_grid_cols, 'border-b p-3 hover:bg-gray-100 cursor-pointer']"
+            >
+                <button v-if="!queue.delete_ready" @click="queue.delete_ready = true">
+                    <span class="text-[#003D5B] text-lg">
+                        <FontAwesomeIcon :icon="['far', 'square']"/>
+                    </span>
+                </button>
+                <button v-else @click="queue.delete_ready = false">
+                    <span class="text-[#003D5B] text-lg">
+                        <FontAwesomeIcon :icon="['fas', 'square-check']"/>
+                    </span>
+                </button>
+
+                <div>{{ queue.queue_number }}</div>
+                <div>{{ queue.ticket?.ticket_number ?? 'N/A' }}</div>
+                <div>{{ queue.assigned_user?.name}}</div>
+                <div>{{ formatDate(queue.updated_at) }}</div>
+                <div>{{ queue.ticket?.status }}</div>
+            </div>
+
+            <!-- Loading state -->
+            <div v-if="loading" class="text-center py-4 text-gray-700">Loading...</div>
+
+            <!-- No data state -->
+            <div v-if="!loading && queueList.length === 0" class="text-center py-4 text-gray-700">No queue item found.</div>
+        </div>
+
+    </div>
+
 
     <!-- Table Container -->
-    <div class="w-full max-w-6xl flex flex-col shadow-lg rounded-3xl overflow-hidden h-full">
+    <div v-if="!isManageClicked" class="w-full max-w-6xl flex flex-col shadow-lg overflow-hidden h-full">
 
       <!-- Table Header -->
       <div :class="[grid_cols, 'bg-gray-200 p-3 rounded-t-2xl']">
@@ -98,13 +160,15 @@
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue';
+    import { ref, onMounted, computed } from 'vue';
 
     const style_header = "font-semibold text-[#003D5B]";
     const grid_cols = "grid grid-cols-[200px_200px_180px_220px_200px_auto] gap-4";
+    const manage_grid_cols = "grid grid-cols-[25px_200px_200px_180px_220px_200px_auto] gap-4";
 
     const props = defineProps({
       isFilterClicked: Boolean,
+      isManageClicked: Boolean,
     });
 
     // reactive variables
@@ -145,7 +209,16 @@
         try {
             const response = await axios.get('/queues/list', { params: filters.value });
             queueList.value = response.data; // adjust if API returns { data: [...] } structure
-            console.log(response.data);
+
+            // add delete_ready to each item
+            queueList.value = response.data.map(q => ({
+                ...q,
+                delete_ready: false
+            }));
+
+            console.log(queueList.value);
+
+
         } catch (error) {
             console.error('Error fetching queue items:', error);
         } finally {
@@ -175,4 +248,52 @@
         if (!ticketId) return;
         window.location.href = `/dashboard/tickets?highlight=${ticketId}`;
     };
+
+
+    //manage queue codes
+
+    const selectAll = computed({
+            get: () => queueList.value.every(q => q.delete_ready),
+            set: (value) => {
+                queueList.value.forEach(q => q.delete_ready = value);
+        }
+    });
+
+    const delete_queue_items = async () => {
+        // Get all selected queues
+        const selectedQueues = queueList.value.filter(q => q.delete_ready);
+
+        if (selectedQueues.length === 0) return; // safety check
+
+        if (!confirm(`Are you sure you want to delete ${selectedQueues.length} queue item(s)?`)) return;
+
+        try {
+            // Loop through selected queues
+            await Promise.all(
+                selectedQueues.map(async (queue) => {
+                    // Delete the queue
+                    await axios.delete(`/queues/${queue.id}`);
+
+                    // Update the related ticket if exists
+                    if (queue.ticket_id) {
+                    await axios.put(`/tickets/${queue.ticket_id}/status`, {
+                        status: 'pending approval'
+                    });
+                    }
+                })
+            );
+
+            alert('Selected queue items deleted and tickets updated successfully.');
+
+            // refresh page
+            window.location.href = `/dashboard/queue-list`;
+        } catch (error) {
+            console.error('Failed to delete queue items:', error);
+            alert('Failed to delete one or more items.');
+        }
+    };
+
+    //refresh queue list when 'Delete Items' button is clicked
+
+
 </script>

@@ -3,7 +3,10 @@
     <div class="bg-white rounded-2xl w-full max-w-lg p-6">
 
       <!-- Modal Title -->
-      <h2 class="text-xl font-semibold mb-1">Ticket Logs</h2>
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold mb-1">Ticket Logs</h2>
+        <button class="text-gray-600" @click="deleteTicket">Delete this ticket</button>
+      </div>
       <h2 class="text-md mb-4">Ticket Number: <span class="font-semibold">{{ ticket?.ticket_number }}</span></h2>
 
       <!-- Logs Body -->
@@ -92,4 +95,32 @@ onMounted(fetchLogs);
 const formatDate = (iso) => {
   return new Date(iso).toLocaleString();
 };
+
+const emit = defineEmits(["close", "deleted"]);
+
+//delete ticket
+const deleteTicket = async () => {
+  if (!confirm("Deleting a ticket also delete its entry in the queue, if applicable.\nAre you sure you want to delete this ticket?")) return;
+
+  try {
+    await axios.delete(`queues/by-ticket/${props.ticketId}`);
+    await axios.delete(`/tickets/${props.ticketId}`);
+    alert("Ticket deleted.");
+    // notify parent to refresh list
+    emit("deleted");
+    // close modal
+    emit("close");
+
+    // refresh page
+            window.location.href = `/dashboard/tickets`;
+
+  } catch (error) {
+    console.error("Delete failed:", error);
+    alert("Failed to delete ticket.");
+  }
+};
+
+
+
+
 </script>

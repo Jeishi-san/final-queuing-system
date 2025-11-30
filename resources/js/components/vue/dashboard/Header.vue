@@ -46,7 +46,7 @@
         });
     };
 
-    const emit = defineEmits(['isFilterClicked']);
+    const emit = defineEmits(['isFilterClicked', 'isManageClicked']);
 
     const isFilterClicked = ref(false);
 
@@ -58,6 +58,18 @@
     const filterOFF = () => {
         emit('isFilterClicked', false);
         isFilterClicked.value = false;
+    };
+
+    const isManageClicked = ref(false);
+
+    const manageON = () => {
+        emit('isManageClicked', true);
+        isManageClicked.value = true;
+    };
+
+    const manageOFF = () => {
+        emit('isManageClicked', false);
+        isManageClicked.value = false;
     };
 
     const getPageName = () =>  {
@@ -132,6 +144,9 @@
             <button v-if="!isFilterClicked && (isQueuePage || isTicketsPage) " @click="filterON" class="px-2 py-1 rounded bg-white text-[#003D5B]">Filter</button>
             <button v-if="isFilterClicked" @click="filterOFF" class="px-2 py-1 rounded bg-red-500 text-white">Close Filter</button>
 
+            <!-- Manage button -->
+            <button v-if="!isManageClicked && isQueuePage" @click="manageON" class="px-2 py-1 rounded bg-white text-[#003D5B]">Manage</button>
+            <button v-if="isManageClicked" @click="manageOFF" class="px-2 py-1 rounded bg-green-500 text-white">Done</button>
 
             <!-- Profile Icon -->
             <a href="/dashboard/my-profile" class="">

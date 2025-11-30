@@ -70,6 +70,7 @@ Route::prefix('queues')->group(function () {
     Route::get('{queue}', [QueueController::class, 'show']);          // Show queue item
     Route::put('{queue}', [QueueController::class, 'update']);        // Update queue item
     Route::delete('{queue}', [QueueController::class, 'destroy']);    // Remove queue item
+    Route::delete('/by-ticket/{ticket_id}', [QueueController::class, 'deleteByTicket']);    // Remove queue item
 
     // Helper route
     Route::get('next-ticket', [QueueController::class, 'nextTicket']); // Get next ticket
@@ -83,6 +84,8 @@ Route::prefix('tickets')->group(function () {
     Route::post('/', [TicketController::class, 'store']);              // Create ticket
     Route::get('{ticket}', [TicketController::class, 'show']);         // Show ticket
     Route::put('{ticket}', [TicketController::class, 'updateStatus']);       // Update ticket
+    Route::put('/tickets/{id}/status', [TicketController::class, 'afterDeleteFromQueue']);       // Update ticket after deletion from queue
+
     Route::delete('{ticket}', [TicketController::class, 'destroy']);   // Delete ticket
 
     // Helper routes

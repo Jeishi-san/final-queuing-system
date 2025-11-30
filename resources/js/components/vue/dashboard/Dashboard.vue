@@ -10,9 +10,13 @@ import EditProfile from './EditProfile.vue';
 import { ref } from "vue";
 
 const filterClicked = ref(false);
-
 const filterON = (value) => {
     filterClicked.value = value;
+}
+
+const manageClicked = ref(false);
+const manageOn = (value) => {
+    manageClicked.value = value;
 }
 
 const components = {
@@ -44,11 +48,11 @@ const pageName = {
         <!-- Main Section -->
         <div class="flex flex-col flex-1 transition-all duration-300 overflow-hidden">
             <!-- Header -->
-            <Header @isFilterClicked="filterON" :pageName="pageName"></Header>
+            <Header @isFilterClicked="filterON" :pageName="pageName" @isManageClicked="manageOn"></Header>
 
             <!-- Content Area - Made scrollable -->
             <main class="flex-1 overflow-">
-                <component :is="CurrentComponent" :isFilterClicked="filterClicked"/>
+                <component :is="CurrentComponent" :isFilterClicked="filterClicked" :isManageClicked="manageClicked"/>
             </main>
         </div>
     </div>

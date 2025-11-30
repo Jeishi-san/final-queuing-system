@@ -133,7 +133,7 @@
 
     </div>
 
-    <TicketLogs v-if="selectedTicket" :ticketId="selectedTicket.id" @close="selectedTicket = null" />
+    <TicketLogs v-if="selectedTicket" :ticketId="selectedTicket.id" @close="selectedTicket = null" @deleted="refreshList" />
 
   </div>
 </template>
@@ -275,5 +275,10 @@ onMounted(async () => {
     const formatDate = (iso) => {
         if (!iso) return "N/A";
         return new Date(iso).toLocaleString();
+    };
+
+    //refresh list after deletion
+    const refreshList = () => {
+        fetchTickets();
     };
 </script>

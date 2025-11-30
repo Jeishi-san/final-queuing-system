@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Queue;
+use App\Models\TicketLog;
+use App\Models\ActivityLog;
 
 class QueueController extends Controller
 {
@@ -14,34 +16,40 @@ class QueueController extends Controller
 
         // Filter by queue_number
         if ($request->queue_number) {
-            $query->where('queue_number', 'LIKE', '%'.$request->queue_number.'%');
+            $query->where('queue_number', 'LIKE', '%'.$request->queue_number.'%')
+                    ->whereNull('deleted_at');
         }
 
         // Filter by ticket_number
         if ($request->ticket_number) {
             $query->whereHas('ticket', function ($q) use ($request) {
-                $q->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
+                $q->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%')
+                    ->whereNull('deleted_at');
             });
         }
 
         // Filter by assigned staff
         if ($request->assigned_to) {
-            $query->where('assigned_to', $request->assigned_to);
+            $query->where('assigned_to', $request->assigned_to)
+                    ->whereNull('deleted_at');
         }
 
         // Filter by status
         if ($request->status) {
             $query->whereHas('ticket', function ($q) use ($request) {
-                $q->where('status', $request->status);
+                $q->where('status', $request->status)
+                    ->whereNull('deleted_at');
             });
         }
 
         // Filter by date range
         if ($request->start_date) {
-            $query->whereDate('updated_at', '>=', $request->start_date);
+            $query->whereDate('updated_at', '>=', $request->start_date)
+                    ->whereNull('deleted_at');
         }
         if ($request->end_date) {
-            $query->whereDate('updated_at', '<=', $request->end_date);
+            $query->whereDate('updated_at', '<=', $request->end_date)
+                    ->whereNull('deleted_at');
         }
 
         return $query->orderBy('queue_number')->get();
@@ -52,7 +60,8 @@ class QueueController extends Controller
     {
         $queues = Queue::with('ticket',) // eager load related ticket
             ->whereHas('ticket', function ($query) {
-                $query->where('status', 'queued');
+                $query->where('status', 'queued')
+                        ->whereNull('deleted_at');
             })
             ->orderBy('created_at', 'asc')
             ->take(5)
@@ -66,7 +75,8 @@ class QueueController extends Controller
     {
         $queues = Queue::with('ticket',) // eager load related ticket
             ->whereHas('ticket', function ($query) {
-                $query->where('status', 'queued');
+                $query->where('status', 'queued')
+                        ->whereNull('deleted_at');
             })
             ->orderBy('created_at', 'asc')
             ->get();
@@ -79,7 +89,8 @@ class QueueController extends Controller
     {
         $queues = Queue::with(['ticket', 'assignedUser']) // eager load related ticket
             ->whereHas('ticket', function ($query) {
-                $query->where('status', 'in progress');
+                $query->where('status', 'in progress')
+                        ->whereNull('deleted_at');
             })
             ->orderBy('created_at', 'asc')
             ->get();
@@ -143,5 +154,16 @@ class QueueController extends Controller
 
         // Format back to DAM000000 style
         return 'DAM' . str_pad($num, 6, '0', STR_PAD_LEFT);
+    }
+
+    public function deleteByTicket($ticketId)
+    {
+        $queue = Queue::where('ticket_id', $ticketId)->first();
+
+        if ($queue) {
+            $queue->delete(); // soft delete
+        }
+
+        return response()->json(['message' => 'Queue deleted if it existed.']);
     }
 }

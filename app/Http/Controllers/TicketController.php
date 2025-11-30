@@ -19,40 +19,48 @@ class TicketController extends Controller
 
         // Filter by ticket_number
         if ($request->ticket_number) {
-            $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
+            $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%')
+                    ->whereNull('deleted_at');
         }
 
         // Filter by holder_name
         if ($request->holder_name) {
-            $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%');
+            $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%')
+                    ->whereNull('deleted_at');
         }
 
         // Filter by holder_email
         if ($request->holder_email) {
-            $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%');
+            $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%')
+                    ->whereNull('deleted_at');
         }
 
         // Filter by issue
         if ($request->issue) {
-            $query->where('issue', 'LIKE', '%'.$request->issue.'%');
+            $query->where('issue', 'LIKE', '%'.$request->issue.'%')
+                    ->whereNull('deleted_at');
         }
 
         // Filter by status
         if ($request->status) {
-            $query->where('status', $request->status);
+            $query->where('status', $request->status)
+                    ->whereNull('deleted_at');
         }
 
         // Filter by date range
         if ($request->start_date) {
-            $query->whereDate('updated_at', '>=', $request->start_date);
+            $query->whereDate('updated_at', '>=', $request->start_date)
+                    ->whereNull('deleted_at');
         }
         if ($request->end_date) {
-            $query->whereDate('updated_at', '<=', $request->end_date);
+            $query->whereDate('updated_at', '<=', $request->end_date)
+                    ->whereNull('deleted_at');
         }
 
         // Filter by next in line queued tickets
         if ($request->nextQueued) {
-            $query->where('status', 'queued');
+            $query->where('status', 'queued')
+                    ->whereNull('deleted_at');
             return $query->orderBy('created_at', 'asc')->take(5)->get();
         }
 
@@ -106,6 +114,21 @@ class TicketController extends Controller
     public function destroy(Ticket $ticket)
     {
         $ticket->delete();
+
+        // Log the status change
+        TicketLog::add(
+            $ticket->id,
+            auth('web')->id(),
+            'Ticket has been deleted'
+        );
+
+        // Log user activity
+        $this->logActivity(
+            auth('web')->id(),
+            "Deleted ticket #{$ticket->ticket_number}"
+        );
+
+
         return response()->json(['message' => 'Ticket deleted']);
     }
 
@@ -223,6 +246,15 @@ class TicketController extends Controller
             'user_id' => $userId,
             'action'  => $action,
         ]);
+    }
+
+    public function afterDeleteFromQueue(Request $request, $id)
+    {
+        $ticket = Ticket::findOrFail($id);
+        $ticket->status = $request->status;
+        $ticket->save();
+
+        return response()->json(['message' => 'Ticket status updated']);
     }
 
 }
