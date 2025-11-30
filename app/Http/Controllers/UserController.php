@@ -172,10 +172,14 @@ class UserController extends Controller
 
             $user->update($updateData);
 
-            Log::info('User updated successfully', ['user_id' => $user->id]);
+            // Log user activity
+            $this->logActivity(
+                auth('web')->id(),
+                "User updated profile"
+            );
 
             return response()->json([
-                'message' => 'User updated successfully',
+                'message' => 'User updated successfully niagi dre',
                 'user' => $user->fresh()
             ]);
 
@@ -186,6 +190,15 @@ class UserController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    //log function
+    private function logActivity($userId, $action)
+    {
+        ActivityLog::create([
+            'user_id' => $userId,
+            'action'  => $action,
+        ]);
     }
 
     // Delete a user
@@ -481,3 +494,4 @@ class UserController extends Controller
         }
     }
 }
+
