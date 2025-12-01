@@ -51,9 +51,9 @@
                             :disabled="loading || loadingLogs"
                             class="bg-gray-500 text-white text-sm px-4 py-2 rounded-xl hover:bg-gray-600 transition flex items-center gap-2 disabled:opacity-50"
                         >
-                            <FontAwesomeIcon
-                                :icon="['fas', 'rotate']"
-                                :class="{ 'animate-spin': loading || loadingLogs }"/>
+                            <span :class="{ 'animate-spin': loading || loadingLogs }">
+                                <FontAwesomeIcon :icon="['fas', 'rotate']"/>
+                            </span>
                             Refresh
                         </button>
                     </div>
@@ -94,10 +94,11 @@
                         :disabled="loadingLogs"
                         class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded flex items-center gap-2 transition disabled:opacity-50"
                     >
-                        <FontAwesomeIcon
-                            :icon="['fas', 'rotate']"
-                            :class="{ 'animate-spin': loadingLogs }"
-                        />
+                        <span :class="{ 'animate-spin': loadingLogs }">
+                            <FontAwesomeIcon
+                                :icon="['fas', 'rotate']"
+                            />
+                        </span>
                         Refresh
                     </button>
                 </div>
@@ -228,6 +229,7 @@ const fetchActivityLogs = async () => {
         loadingLogs.value = true;
         const response = await axios.get('/api/user/activity-logs');
         activityLogs.value = response.data.activity_logs || [];
+        console.log(activityLogs.value);
     } catch (err) {
         console.error('Error fetching activity logs:', err);
         activityLogs.value = [];
