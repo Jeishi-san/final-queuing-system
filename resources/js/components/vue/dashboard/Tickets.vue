@@ -225,7 +225,7 @@ const resetFilters = () => {
 const updateStatus = async (ticket) => {
   try {
     const response = await axios.put(`/tickets/${ticket.id}`, { status: ticket.status });
-    console.log("Status Updated", response.data.value);
+    console.log("Status Updated", response.data);
   } catch (error) {
     console.error('Failed to update status:', error);
   }

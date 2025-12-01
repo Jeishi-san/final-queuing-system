@@ -185,9 +185,9 @@ class TicketController extends Controller
             if (isset($validated['status']) && $ticket->status != $validated['status']) {
 
                 if ($validated['status'] === 'queued') {
-                    $this->addTicketToQueue($ticket);
-                    $ticketLog_message = "Ticket validated and added to queue";
-                } elseif ($validated['status'] === 'in progress') {
+                     $this->addTicketToQueue($ticket);
+                     $ticketLog_message = "Ticket validated and added to queue";
+                 } elseif ($validated['status'] === 'in progress') {
                     $this->updateAssignedUser($ticket);
                     $ticketLog_message = "Ticket is being processed";
                 } elseif ($validated['status'] === 'resolved') {
@@ -205,25 +205,17 @@ class TicketController extends Controller
                 }
 
                 // Log the status change
-                $ticketLog = TicketLog::add(
+                TicketLog::add(
                     $ticket->id,
                     auth('web')->id(),
                     $ticketLog_message
                 );
-
-                if (!$ticketLog) {
-                    return response()->json(['message' => 'Logging ticket activity failed'], 500);
-                }
 
                 // Log user activity
                 $userActivity = $this->logActivity(
                     auth('web')->id(),
                     "Updated status of ticket #{$ticket->ticket_number} to {$validated['status']}"
                 );
-
-                if (!$userActivity) {
-                    return response()->json(['message' => 'Logging user activity failed'], 500);
-                }
 
                 $ticket->status = $validated['status'];
                 $ticket->save();
@@ -268,10 +260,12 @@ class TicketController extends Controller
 
     private function logActivity($userId, $action)
     {
-        ActivityLog::create([
+        $log = ActivityLog::create([
             'user_id' => $userId,
             'action'  => $action,
         ]);
+
+        return $log;
     }
 
     public function afterDeleteFromQueue(Request $request, $id)
