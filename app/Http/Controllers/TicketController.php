@@ -8,6 +8,7 @@ use App\Models\TicketLog;
 use App\Models\Queue;
 use App\Models\ActivityLog;
 use App\Http\Controllers\QueueController;
+use Illuminate\Validation\Rule;
 
 
 class TicketController extends Controller
@@ -73,7 +74,11 @@ class TicketController extends Controller
         $validated = $request->validate([
             'holder_name' => 'required|string',
             'holder_email' => 'required|email',
-            'ticket_number' => 'required|string|unique:tickets',
+            'ticket_number' => [
+                'required',
+                'string',
+                Rule::unique('tickets', 'ticket_number')->withoutTrashed(),
+            ],
             'issue' => 'required|string'
         ]);
 
