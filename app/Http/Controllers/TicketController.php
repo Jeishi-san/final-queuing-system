@@ -173,54 +173,75 @@ class TicketController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $validated = $request->validate([
-            'status' => 'required|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'status' => 'required|string',
+            ]);
 
-        $ticket = Ticket::findOrFail($id);
+            $ticket = Ticket::findOrFail($id);
 
-        $ticketLog_message = "";
+            $ticketLog_message = "";
 
-        if (isset($validated['status']) && $ticket->status != $validated['status']) {
+            if (isset($validated['status']) && $ticket->status != $validated['status']) {
 
-            if ($validated['status'] === 'queued') {
-                $this->addTicketToQueue($ticket);
-                $ticketLog_message = "Ticket validated and added to queue";
-            } elseif ($validated['status'] === 'in progress') {
-                $this->updateAssignedUser($ticket);
-                $ticketLog_message = "Ticket is being processed";
-            } elseif ($validated['status'] === 'resolved') {
-                $this->updateAssignedUser($ticket);
-                $ticketLog_message = "Ticket has been resolved";
-            } elseif ($validated['status'] === 'on hold') {
-                $this->updateAssignedUser($ticket);
-                $ticketLog_message = "Ticket has been put on hold";
-            } elseif ($validated['status'] === 'cancelled') {
-                $this->updateAssignedUser($ticket);
-                $ticketLog_message = "Ticket has been cancelled";
-            } else {
-                $this->updateAssignedUser($ticket);
-                $ticketLog_message = "Ticket status changed to " . $validated['status'];
+                if ($validated['status'] === 'queued') {
+                    $this->addTicketToQueue($ticket);
+                    $ticketLog_message = "Ticket validated and added to queue";
+                } elseif ($validated['status'] === 'in progress') {
+                    $this->updateAssignedUser($ticket);
+                    $ticketLog_message = "Ticket is being processed";
+                } elseif ($validated['status'] === 'resolved') {
+                    $this->updateAssignedUser($ticket);
+                    $ticketLog_message = "Ticket has been resolved";
+                } elseif ($validated['status'] === 'on hold') {
+                    $this->updateAssignedUser($ticket);
+                    $ticketLog_message = "Ticket has been put on hold";
+                } elseif ($validated['status'] === 'cancelled') {
+                    $this->updateAssignedUser($ticket);
+                    $ticketLog_message = "Ticket has been cancelled";
+                } else {
+                    $this->updateAssignedUser($ticket);
+                    $ticketLog_message = "Ticket status changed to " . $validated['status'];
+                }
+
+                // Log the status change
+                $ticketLog = TicketLog::add(
+                    $ticket->id,
+                    auth('web')->id(),
+                    $ticketLog_message
+                );
+
+                if (!$ticketLog) {
+                    return response()->json(['message' => 'Logging ticket activity failed'], 500);
+                }
+
+                // Log user activity
+                $userActivity = $this->logActivity(
+                    auth('web')->id(),
+                    "Updated status of ticket #{$ticket->ticket_number} to {$validated['status']}"
+                );
+
+                if (!$userActivity) {
+                    return response()->json(['message' => 'Logging user activity failed'], 500);
+                }
+
+                $ticket->status = $validated['status'];
+                $ticket->save();
+
+                return response()->json(['message' => 'Ticket status updated successfully']);
             }
 
-            // Log the status change
-            TicketLog::add(
-                $ticket->id,
-                auth('web')->id(),
-                $ticketLog_message
-            );
+            return response()->json(['message' => 'No changes made to ticket status']);
 
-            // Log user activity
-            $this->logActivity(
-                auth('web')->id(),
-                "Updated status of ticket #{$ticket->ticket_number} to {$validated['status']}"
-            );
-
-            $ticket->status = $validated['status'];
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation errors
+            return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Any other errors
+            return response()->json(['message' => 'Failed to update ticket: ' . $e->getMessage()], 500);
         }
-
-        $ticket->save();
     }
+
 
     private function updateAssignedUser(Ticket $ticket) {
         // Update assigned_to in the queue table
