@@ -25,6 +25,7 @@ return new class extends Migration
                 'resolved',
                 'cancelled',
                 'pending approval',
+                'dequeued'
             ])->default('pending approval'); // Ticket status
 
             $table->timestamps();

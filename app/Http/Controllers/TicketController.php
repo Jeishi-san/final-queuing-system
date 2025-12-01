@@ -161,14 +161,16 @@ class TicketController extends Controller
     {
         //Prevent duplicate queue entries
         if (Queue::where('ticket_id', $ticket->id)->exists()) {
-            return;
+            return response()->json(['message' => 'Queue already exists']);
         }
 
-        Queue::create([
+        $queue = Queue::create([
             'ticket_id'   => $ticket->id,
             'assigned_to' => auth('web')->id(),
             'queue_number' => QueueController::generateQueueNumber(),
         ]);
+
+        return $queue;
     }
 
     public function updateStatus(Request $request, $id)
@@ -185,9 +187,9 @@ class TicketController extends Controller
             if (isset($validated['status']) && $ticket->status != $validated['status']) {
 
                 if ($validated['status'] === 'queued') {
-                     $this->addTicketToQueue($ticket);
-                     $ticketLog_message = "Ticket validated and added to queue";
-                 } elseif ($validated['status'] === 'in progress') {
+                    $this->addTicketToQueue($ticket);
+                    $ticketLog_message = "Ticket validated and added to queue";
+                } elseif ($validated['status'] === 'in progress') {
                     $this->updateAssignedUser($ticket);
                     $ticketLog_message = "Ticket is being processed";
                 } elseif ($validated['status'] === 'resolved') {
@@ -199,6 +201,9 @@ class TicketController extends Controller
                 } elseif ($validated['status'] === 'cancelled') {
                     $this->updateAssignedUser($ticket);
                     $ticketLog_message = "Ticket has been cancelled";
+                } elseif ($validated['status'] === 'dequeued') {
+                    $this->updateAssignedUser($ticket);
+                    $ticketLog_message = "Ticket has been dequeued";
                 } else {
                     $this->updateAssignedUser($ticket);
                     $ticketLog_message = "Ticket status changed to " . $validated['status'];
@@ -212,7 +217,7 @@ class TicketController extends Controller
                 );
 
                 // Log user activity
-                $userActivity = $this->logActivity(
+                $this->logActivity(
                     auth('web')->id(),
                     "Updated status of ticket #{$ticket->ticket_number} to {$validated['status']}"
                 );
@@ -266,15 +271,6 @@ class TicketController extends Controller
         ]);
 
         return $log;
-    }
-
-    public function afterDeleteFromQueue(Request $request, $id)
-    {
-        $ticket = Ticket::findOrFail($id);
-        $ticket->status = $request->status;
-        $ticket->save();
-
-        return response()->json(['message' => 'Ticket status updated']);
     }
 
 }

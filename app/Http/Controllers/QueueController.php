@@ -143,7 +143,7 @@ class QueueController extends Controller
 
     public static function generateQueueNumber()
     {
-        $lastQueue = Queue::orderBy('queue_number', 'desc')->first();
+        $lastQueue = Queue::withTrashed()->orderBy('queue_number', 'desc')->first();
 
         // Extract the number part (remove "DAM")
         if ($lastQueue && str_starts_with($lastQueue->queue_number, 'DAM')) {

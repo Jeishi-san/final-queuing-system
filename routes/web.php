@@ -84,7 +84,6 @@ Route::prefix('tickets')->group(function () {
     Route::post('/', [TicketController::class, 'store']);              // Create ticket
     Route::get('{ticket}', [TicketController::class, 'show']);         // Show ticket
     Route::put('{ticket}', [TicketController::class, 'updateStatus']);       // Update ticket
-    Route::put('/tickets/{id}/status', [TicketController::class, 'afterDeleteFromQueue']);       // Update ticket after deletion from queue
 
     Route::delete('{ticket}', [TicketController::class, 'destroy']);   // Delete ticket
 

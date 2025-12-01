@@ -76,10 +76,10 @@
     </div>
 
     <!-- Table Container -->
-    <div class="w-full max-w-[1100px] flex flex-col shadow-lg rounded-3xl overflow-hidden">
+    <div class="w-full max-w-[1100px] flex flex-col shadow-lg overflow-hidden h-full">
 
       <!-- Table Header -->
-      <div :class="[grid_cols, 'bg-gray-200 p-3']">
+      <div :class="[grid_cols, 'bg-gray-200 p-3 rounded-t-2xl']">
         <div :class="style_header">Ticket Number</div>
         <div :class="style_header">Holder Name</div>
         <div :class="style_header">Email</div>
@@ -88,7 +88,7 @@
       </div>
 
       <!-- Table Rows -->
-      <div class="bg-[#99bbc4] overflow-y-auto max-h-[calc(100vh-160px)]">
+      <div class="bg-[#99bbc4] overflow-y-auto h-full">
         <div
             v-for="ticket in ticketList"
             :key="ticket.id"
@@ -109,7 +109,7 @@
             <select
                 v-model="ticket.status"
                 @change="updateStatus(ticket)"
-                class="bg-white px-2 py-1 rounded border"
+                class="bg-white px-2 py-1 rounded border w-[90%]"
             >
                 <option
                     v-for="status in allStatuses"
@@ -133,13 +133,13 @@
 
     </div>
 
-    <TicketLogs v-if="selectedTicket" :ticketId="selectedTicket.id" @close="selectedTicket = null" @deleted="refreshList" />
+    <TicketLogs v-if="selectedTicket" :ticketId="selectedTicket.id" @close="selectedTicket = null" @deleted="refreshList()" />
 
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue';
+import { ref, onMounted, nextTick, computed, watch } from 'vue';
 import TicketLogs from './TicketLogs.vue';
 
     const props = defineProps({
@@ -161,7 +161,8 @@ const allStatuses = [
   'in progress',
   'on hold',
   'resolved',
-  'cancelled'
+  'cancelled',
+  'dequeued'
 ];
 
 const allowedNext = {
@@ -170,7 +171,8 @@ const allowedNext = {
   'in progress': ['resolved', 'on hold', 'cancelled'],
   'on hold': ['in progress', 'cancelled'],
   'resolved': [],
-  'cancelled': []
+  'cancelled': [],
+  'dequeued': [],
 };
 
     // FILTERS (SERVER-SIDE)
@@ -281,4 +283,14 @@ onMounted(async () => {
     const refreshList = () => {
         fetchTickets();
     };
+
+//refresh when filter is clicked
+watch(
+  () => props.isFilterClicked,
+  (newVal, oldVal) => {
+    if (newVal != oldVal) {
+      resetFilters();
+    }
+  }
+)
 </script>

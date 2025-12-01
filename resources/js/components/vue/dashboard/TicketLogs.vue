@@ -7,7 +7,8 @@
         <h2 class="text-xl font-semibold mb-1">Ticket Logs</h2>
         <button class="text-gray-600" @click="deleteTicket">Delete this ticket</button>
       </div>
-      <h2 class="text-md mb-4">Ticket Number: <span class="font-semibold">{{ ticket?.ticket_number }}</span></h2>
+      <h2 class="text-md">Ticket Number: <span class="font-semibold">{{ ticket?.ticket_number }}</span></h2>
+      <h2 class="text-md mb-4">Ticket Status: <span class="font-semibold">{{ ticket?.status }}</span></h2>
 
       <!-- Logs Body -->
       <div class="max-h-96 overflow-y-auto space-y-2">
@@ -103,16 +104,19 @@ const deleteTicket = async () => {
   if (!confirm("Deleting a ticket also delete its entry in the queue, if applicable.\nAre you sure you want to delete this ticket?")) return;
 
   try {
-    await axios.delete(`queues/by-ticket/${props.ticketId}`);
+    //Check if the ticket is enqueued
+    const blockedStatuses = ['pending approval', 'dequeued'];
+
+    // if (!blockedStatuses.includes(ticket.value.status)) { //which means the ticket is in the queueList
+    //    await axios.delete(`queues/by-ticket/${props.ticketId}`);
+    // }
+
     await axios.delete(`/tickets/${props.ticketId}`);
     alert("Ticket deleted.");
     // notify parent to refresh list
     emit("deleted");
     // close modal
     emit("close");
-
-    // refresh page
-            window.location.href = `/dashboard/tickets`;
 
   } catch (error) {
     console.error("Delete failed:", error);

@@ -62,7 +62,7 @@
 
         <div class="flex justify-between items-center">
             <h2 class="text-white text-3xl font-semibold mb-5">Managing Queue Items...</h2>
-            <button v-if="queueList.some(q => q.delete_ready)" @click="delete_queue_items" class="px-2 py-1 rounded bg-red-500 text-white">Delete Items</button>
+            <button v-if="queueList.some(q => q.delete_ready)" @click="delete_queue_items" class="px-2 py-1 rounded bg-red-500 text-white">Dequeue Items</button>
         </div>
 
         <!-- Table Header -->
@@ -160,7 +160,7 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, computed } from 'vue';
+    import { ref, onMounted, computed, watch } from 'vue';
 
     const style_header = "font-semibold text-[#003D5B]";
     const grid_cols = "grid grid-cols-[200px_200px_180px_220px_200px_auto] gap-4";
@@ -271,14 +271,17 @@
             // Loop through selected queues
             await Promise.all(
                 selectedQueues.map(async (queue) => {
+
+                    const deleted_queue = queue;
+
                     // Delete the queue
                     await axios.delete(`/queues/${queue.id}`);
 
                     // Update the related ticket if exists
-                    if (queue.ticket_id) {
-                    await axios.put(`/tickets/${queue.ticket_id}/status`, {
-                        status: 'pending approval'
-                    });
+                    if (deleted_queue.ticket) {
+                        await axios.put(`/tickets/${deleted_queue.ticket.id}`, {
+                            status: 'dequeued'
+                        });
                     }
                 })
             );
@@ -286,14 +289,34 @@
             alert('Selected queue items deleted and tickets updated successfully.');
 
             // refresh page
-            window.location.href = `/dashboard/queue-list`;
+            resetFilters();
         } catch (error) {
             console.error('Failed to delete queue items:', error);
             alert('Failed to delete one or more items.');
         }
     };
 
+    //refresh when filter || managed is clicked
+    watch(
+    () => props.isFilterClicked,
+    (newVal, oldVal) => {
+        if (newVal != oldVal) {
+        resetFilters();
+        }
+    }
+    )
+
+    watch(
+    () => props.isManageClicked,
+    (newVal, oldVal) => {
+        if (newVal != oldVal) {
+        resetFilters();
+        }
+    }
+    )
+
     //refresh queue list when 'Delete Items' button is clicked
+
 
 
 </script>
