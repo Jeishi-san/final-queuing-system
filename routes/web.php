@@ -47,16 +47,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/notifications', function () {
         return view('vue.admin.dashboard');
     })->name('notifications.page');
-    
+
 });
 
 // -------------------- USER ROUTES -------------------- //
 Route::prefix('users')->group(function () {
-    Route::get('/', [UserController::class, 'getUsers']);             
-    Route::post('/', [UserController::class, 'store']);               
-    Route::get('{user}', [UserController::class, 'show']);            
-    Route::put('{user}', [UserController::class, 'update']);          
-    Route::delete('{user}', [UserController::class, 'destroy']);      
+    Route::get('/', [UserController::class, 'getUsers']);
+    Route::post('/', [UserController::class, 'store']);
+    Route::get('{user}', [UserController::class, 'show']);
+    Route::put('{user}', [UserController::class, 'update']);
+    Route::delete('{user}', [UserController::class, 'destroy']);
 
     Route::get('{user}/tickets-handled', [UserController::class, 'ticketsHandled']);
     Route::get('{user}/average-resolution', [UserController::class, 'averageResolutionTime']);
@@ -65,38 +65,33 @@ Route::prefix('users')->group(function () {
 
 // -------------------- QUEUE ROUTES -------------------- //
 Route::prefix('queues')->group(function () {
-    Route::get('/', [QueueController::class, 'getQueueList']);             
-    Route::get('/list', [QueueController::class, 'index']);             
-    Route::get('/inProgress', [QueueController::class, 'getInProgressQueues']);             
-    Route::get('/waiting', [QueueController::class, 'getWaitingItems']);             
+    Route::get('/', [QueueController::class, 'getQueueList']);
+    Route::get('/list', [QueueController::class, 'index']);
+    Route::get('/inProgress', [QueueController::class, 'getInProgressQueues']);
+    Route::get('/waiting', [QueueController::class, 'getWaitingItems']);
 
-    Route::post('/', [QueueController::class, 'store']);              
-    Route::get('{queue}', [QueueController::class, 'show']);          
-    Route::put('{queue}', [QueueController::class, 'update']);        
-    Route::delete('{queue}', [QueueController::class, 'destroy']);    
+    Route::post('/', [QueueController::class, 'store']);
+    Route::get('{queue}', [QueueController::class, 'show']);
+    Route::put('{queue}', [QueueController::class, 'update']);
+    Route::delete('{queue}', [QueueController::class, 'destroy']);
+    Route::delete('/by-ticket/{ticket_id}', [QueueController::class, 'deleteByTicket']);    // Remove queue item
 
-    Route::get('next-ticket', [QueueController::class, 'nextTicket']); 
+    Route::get('next-ticket', [QueueController::class, 'nextTicket']);
 });
 
 // -------------------- TICKET ROUTES -------------------- //
 Route::prefix('tickets')->group(function () {
-    Route::get('/', [TicketController::class, 'index']);             
-    Route::get('/queued', [TicketController::class, 'countQueuedTickets']);             
+    Route::get('/', [TicketController::class, 'index']);
+    Route::get('/queued', [TicketController::class, 'countQueuedTickets']);
 
+    Route::post('/', [TicketController::class, 'store']);
+    Route::get('{ticket}', [TicketController::class, 'show']);
+    Route::put('{ticket}', [TicketController::class, 'updateStatus']);
+    Route::delete('{ticket}', [TicketController::class, 'destroy']);
 
-    Route::post('/', [TicketController::class, 'store']);              
-    Route::get('{ticket}', [TicketController::class, 'show']);         
-    Route::put('{ticket}', [TicketController::class, 'updateStatus']);       
-    Route::delete('{ticket}', [TicketController::class, 'destroy']);   
-
-    Route::post('/', [TicketController::class, 'store']);              // Create ticket
-    Route::get('{ticket}', [TicketController::class, 'show']);         // Show ticket
-    Route::put('{ticket}', [TicketController::class, 'updateStatus']);       // Update ticket
-
-
-    Route::post('{ticket}/add-log', [TicketController::class, 'addLog']); 
+    Route::post('{ticket}/add-log', [TicketController::class, 'addLog']);
     Route::get('/{ticket}/logs', [TicketLogController::class, 'logsForTicket']);
-    Route::get('status/{status}', [TicketController::class, 'filterByStatus']); 
+    Route::get('status/{status}', [TicketController::class, 'filterByStatus']);
 });
 
 require __DIR__ . '/auth.php';

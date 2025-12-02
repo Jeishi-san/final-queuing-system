@@ -1,8 +1,8 @@
 <script setup>
     import { ref, computed, onMounted, onUnmounted } from "vue";
     import DateComponent from '../tools/Date.vue'; // Renamed to avoid conflict with native Date
-    import axios from 'axios'; 
-    
+    //import axios from 'axios'; //nganong gi-add nasad ni? it was told before na no need nani kay naka global access nani through bootstrap.js
+
 
     const props = defineProps({
         pageName: {
@@ -65,17 +65,17 @@
     };
 
     // --- User Logic ---
-    const user = ref({}); 
+    const user = ref({});
     const getProfileImage = (path) => {
         if (!path) return null;
         if (path.startsWith('http') || path.startsWith('data:')) return path;
-        return `/storage/${path}`; 
+        return `/storage/${path}`;
     };
 
     const fetchUserProfile = async () => {
         try {
-            const response = await axios.get('/api/user/profile'); 
-            user.value = response.data; 
+            const response = await axios.get('/api/user/profile');
+            user.value = response.data;
         } catch (error) {
             console.error("Error fetching profile", error);
         }
@@ -107,9 +107,9 @@
     const fetchNotifications = async () => {
         loadingNotifications.value = true;
         try {
-            const response = await axios.get('/api/notifications?page=1'); 
-            notifications.value = response.data.data.slice(0, 5); 
-            
+            const response = await axios.get('/api/notifications?page=1');
+            notifications.value = response.data.data.slice(0, 5);
+
             if(response.data.unread_count !== undefined) {
                 unreadCount.value = response.data.unread_count;
             }
@@ -125,7 +125,7 @@
             await axios.post(`/api/notifications/${id}/read`);
             const notif = notifications.value.find(n => n.id === id);
             if(notif) notif.read_at = new Date().toISOString();
-            
+
             if(unreadCount.value > 0) unreadCount.value--;
         } catch (error) {
             console.error("Error marking read", error);
@@ -165,56 +165,56 @@
         </div>
 
         <div class="flex items-center space-x-4 relative">
-            
+
             <div class="relative">
-                <button 
-                    @click="toggleNotifications" 
+                <button
+                    @click="toggleNotifications"
                     class="relative group mr-2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none"
                 >
                     <FontAwesomeIcon :icon="['fas', 'bell']" class="text-white text-xl" />
-                    <span 
-                        v-if="unreadCount > 0" 
+                    <span
+                        v-if="unreadCount > 0"
                         class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-[#003D5B]"
                     >
                         {{ unreadCount > 99 ? '99+' : unreadCount }}
                     </span>
                 </button>
 
-                <div 
-                    v-if="showNotifications" 
-                    @click="showNotifications = false" 
+                <div
+                    v-if="showNotifications"
+                    @click="showNotifications = false"
                     class="fixed inset-0 z-10 cursor-default"
                 ></div>
 
-                <transition 
-                    enter-active-class="transition ease-out duration-100" 
-                    enter-from-class="transform opacity-0 scale-95" 
-                    enter-to-class="transform opacity-100 scale-100" 
-                    leave-active-class="transition ease-in duration-75" 
-                    leave-from-class="transform opacity-100 scale-100" 
+                <transition
+                    enter-active-class="transition ease-out duration-100"
+                    enter-from-class="transform opacity-0 scale-95"
+                    enter-to-class="transform opacity-100 scale-100"
+                    leave-active-class="transition ease-in duration-75"
+                    leave-from-class="transform opacity-100 scale-100"
                     leave-to-class="transform opacity-0 scale-95"
                 >
-                    <div 
-                        v-if="showNotifications" 
+                    <div
+                        v-if="showNotifications"
                         class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-20 border border-gray-200"
                     >
                         <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <h3 class="font-semibold text-gray-700">Notifications</h3>
                             <span v-if="unreadCount > 0" class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{{ unreadCount }} new</span>
                         </div>
-                        
+
                         <div class="max-h-80 overflow-y-auto">
                             <div v-if="loadingNotifications" class="p-4 text-center text-gray-500">
                                 <FontAwesomeIcon :icon="['fas', 'spinner']" spin /> Loading...
                             </div>
-                            
+
                             <div v-else-if="notifications.length === 0" class="p-4 text-center text-gray-500 text-sm">
                                 No notifications found.
                             </div>
 
                             <div v-else>
-                                <div 
-                                    v-for="notif in notifications" 
+                                <div
+                                    v-for="notif in notifications"
                                     :key="notif.id"
                                     class="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex items-start gap-3 cursor-pointer"
                                     :class="{ 'bg-blue-50/50': !notif.read_at }"
@@ -259,10 +259,10 @@
             <button v-if="isManageClicked" @click="manageOFF" class="px-2 py-1 rounded bg-green-500 text-white font-medium text-sm">Done</button>
 
             <a href="/dashboard/my-profile" class="block relative" title="View Profile">
-                <img 
-                    v-if="getProfileImage(user.profile?.image || user.image)" 
-                    :src="getProfileImage(user.profile?.image || user.image)" 
-                    alt="User Profile" 
+                <img
+                    v-if="getProfileImage(user.profile?.image || user.image)"
+                    :src="getProfileImage(user.profile?.image || user.image)"
+                    alt="User Profile"
                     class="w-10 h-10 rounded-full border-2 border-white object-cover hover:opacity-90 transition"
                 />
 
