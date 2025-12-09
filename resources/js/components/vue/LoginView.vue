@@ -56,9 +56,18 @@ function onLoginSuccess() {
 
 <template>
     <!-- Your existing template remains the same -->
-    <div class="flex items-center justify-center">
-        <div class="min-h-screen w-[325px] flex items-center justify-center">
-            <div class="flex flex-col items-center w-full max-w-sm h-[440px] bg-white rounded-[15px] shadow-[0_10px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 ">
+    <div class="min-h-screen flex flex-col items-center justify-center gap-10">
+        <a href="/">
+            <button
+                class="text-white p-1 px-2 hover:text-[#029cda] hover:bg-white rounded-[100%] transition"
+            >
+                <span class="font-bold text-xl">
+                    <FontAwesomeIcon :icon="['fas', 'house']" />
+                </span>
+            </button>
+        </a>
+        <div class="w-[325px] flex items-center justify-center">
+            <div class="flex flex-col items-center w-full max-w-sm h-[440px] bg-white rounded-[15px] shadow-[0_70px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 ">
                 <!-- Icon -->
                 <div class="flex justify-center mb-1">
                     <a href="/">
@@ -134,14 +143,5 @@ function onLoginSuccess() {
                 </p>
             </div>
         </div>
-        <a href="/">
-            <button
-                class="fixed bottom-5 left-5 text-white p-1 px-2 shadow-xl rounded-2xl hover:bg-[#029cda] transition"
-            >
-                <span class="font-bold text-xl">
-                    <FontAwesomeIcon :icon="['fas', 'house']" />
-                </span>
-            </button>
-        </a>
     </div>
 </template>

@@ -1,5 +1,7 @@
 <template>
-    <div class="absolute right-0 top-0 w-[25%] h-full bg-white flex flex-col items-center text-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] p-5">
+    <div class="absolute right-0 top-0  h-full bg-white flex flex-col items-center text-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] p-5
+                xs:w-full
+                lg:w-[50%]">
 
         <h3 class="w-full text-left text-2xl font-bold text-[#003D5B] mt-5">Add Ticket</h3>
 

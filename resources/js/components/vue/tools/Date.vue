@@ -1,5 +1,6 @@
 <template>
-  <div class="text-lg font-medium">
+  <div class="text-lg font-medium
+            xs:text-xl">
     {{ date }}
   </div>
 </template>

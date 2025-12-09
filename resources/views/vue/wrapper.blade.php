@@ -12,11 +12,11 @@
     {{-- Extra styles (per-view injection) --}}
     @stack('styles')
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="w-full bg-[#007380]">
 
-    <div class="bg-[#007380] dark:bg-[#0a0a0a] text-[#1b1b18] flex items-center lg:justify-center min-h-screen flex-col">
-        @yield('content')
-    </div>
+        <div class="bg-[#007380] dark:bg-[#0a0a0a] text-[#1b1b18]">
+            @yield('content')
+        </div>
 
     {{-- Extra scripts (per-view injection) --}}
     @stack('scripts')

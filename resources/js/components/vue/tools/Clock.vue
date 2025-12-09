@@ -1,5 +1,8 @@
 <template>
-  <div class="text-3xl font-bold">
+  <div class="font-bold
+            xs:text-xl
+            md:text-2xl
+            lg:text-4xl">
     {{ time }}
   </div>
 </template>

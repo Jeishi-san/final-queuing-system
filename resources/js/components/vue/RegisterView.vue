@@ -85,8 +85,19 @@ const loginAfterRegistration = async () => {
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center">
-        <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-[0_10px_100px_20px_rgba(0,0,0,0.3)]">
+    <div class="min-h-screen flex flex-col items-center justify-center gap-10">
+
+        <a href="/">
+            <button
+                class="text-white p-1 px-2 hover:text-[#029cda] hover:bg-white rounded-[100%] transition"
+            >
+                <span class="font-bold text-xl">
+                    <FontAwesomeIcon :icon="['fas', 'house']" />
+                </span>
+            </button>
+        </a>
+
+        <div class="max-w-md md:mx-auto bg-white p-6 rounded-2xl shadow-[0_70px_100px_20px_rgba(0,0,0,0.3)] xs:mx-3">
             <h2 class="text-2xl font-bold mb-4 text-center">Register Account</h2>
 
             <form @submit.prevent="register">
@@ -114,15 +125,6 @@ const loginAfterRegistration = async () => {
             <p class="text-center text-sm mt-4">
                 Already have an account? <a href="/login" class="text-blue-600 hover:underline">Login here</a>
             </p>
-            <a href="/">
-            <button
-                class="fixed bottom-5 left-5 text-white p-1 px-2 shadow-xl rounded-2xl hover:bg-[#029cda] transition"
-            >
-                <span class="font-bold text-xl">
-                    <FontAwesomeIcon :icon="['fas', 'house']" />
-                </span>
-            </button>
-            </a>
         </div>
     </div>
 </template>

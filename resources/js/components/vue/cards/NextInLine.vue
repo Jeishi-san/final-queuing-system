@@ -1,7 +1,9 @@
 <template>
-    <div class="w-[95%] 100vh bg-white rounded-3xl flex flex-col items-center text-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] p-5">
+    <div class="w-[95%] 100vh bg-white rounded-3xl flex flex-col items-center text-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] p-5
+                xs:w-full ">
 
-        <h3 class="text-3xl font-bold text-[#003D5B]">Waiting</h3>
+        <h3 class="text-3xl font-bold text-[#003D5B] mt-10 mb-5
+                    xs:m-0">Waiting</h3>
 
         <div v-if="queueList.length == 0" class="mt-24 text-7xl font-bold text-[#003D5B]">
             Loading...
@@ -9,13 +11,16 @@
 
         <div class="mt-4 space-y-2">
             <div v-for="queue in enrichedQueue" :key="queue.id" class="flex flex-col items-center">
-                <h1 class="text-6xl font-bold text-[#003D5B]">
+                <h1 class="font-bold text-[#003D5B]
+                            xs:text-5xl
+                            md:text-8xl">
                     {{ queue.queue_number }}
                 </h1>
                 <p class="text-base text-gray-700 mt-1">Ticket Number:
                     <span class="font-medium">{{ queue.ticket_number }}</span>
                 </p>
-                <div class="h-[1px] w-[500px] bg-gray-300"></div>
+                <div class="h-[1px] bg-gray-300
+                            xs:w-full xs:mt-2"></div>
             </div>
         </div>
 
