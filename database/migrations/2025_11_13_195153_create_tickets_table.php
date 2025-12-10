@@ -14,10 +14,15 @@ return new class extends Migration
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
 
-            $table->string('holder_name'); // Name of the person who submitted the ticket (no system account)
-            $table->string('holder_email'); // Email of the ticket holder, not unique
-            $table->string('ticket_number')->unique(); // Ticket reference number (unique for every ticket)
-            $table->text('issue'); // Issue being ticketed (asset replacement, troubleshoot, etc.)
+            // ✅ RECOMMENDED: Allow these to be null so the DB doesn't crash on empty input
+            $table->string('holder_name')->nullable(); 
+            $table->string('holder_email')->nullable(); 
+            
+            $table->string('ticket_number')->unique();
+            
+            // ✅ RECOMMENDED: Allow issue to be empty (optional)
+            $table->text('issue')->nullable(); 
+            
             $table->enum('status', [
                 'queued',
                 'in progress',
@@ -26,9 +31,17 @@ return new class extends Migration
                 'cancelled',
                 'pending approval',
                 'dequeued'
-            ])->default('pending approval'); // Ticket status
+            ])->default('pending approval');
+
+            // ✅ HIGHLY RECOMMENDED: Link to the User table (Foreign Key)
+            // This lets you find all tickets belonging to a specific User ID easily
+            $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete(); 
+            
+            // Optional: If you want to track who REQUESTED the ticket by ID (not just name)
+            // $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
 
             $table->timestamps();
+            $table->softDeletes(); // Optional: Allows you to "restore" deleted tickets
         });
     }
 

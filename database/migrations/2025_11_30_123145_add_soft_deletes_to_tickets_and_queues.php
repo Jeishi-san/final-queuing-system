@@ -9,15 +9,21 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+   public function up()
     {
-        Schema::table('tickets', function (Blueprint $table) {
-            $table->softDeletes();
-        });
+        // 1. Only add to 'tickets' if it doesn't exist yet
+        if (Schema::hasTable('tickets') && !Schema::hasColumn('tickets', 'deleted_at')) {
+            Schema::table('tickets', function (Blueprint $table) {
+                $table->softDeletes();
+            });
+        }
 
-        Schema::table('queues', function (Blueprint $table) {
-            $table->softDeletes();
-        });
+        // 2. Only add to 'queues' if it doesn't exist yet
+        if (Schema::hasTable('queues') && !Schema::hasColumn('queues', 'deleted_at')) {
+            Schema::table('queues', function (Blueprint $table) {
+                $table->softDeletes();
+            });
+        }
     }
 
     /**

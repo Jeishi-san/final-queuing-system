@@ -15,6 +15,12 @@ return new class extends Migration {
                   ->constrained('users')
                   ->nullOnDelete();
 
+            // ✅ CRITICAL FIX: Add the link to the tickets table
+            $table->foreignId('ticket_id')
+                  ->nullable()
+                  ->constrained('tickets')
+                  ->cascadeOnDelete(); // Cascade delete if the ticket is removed
+
             $table->string('action');
             $table->timestamps();
         });

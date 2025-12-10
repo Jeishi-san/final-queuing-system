@@ -11,7 +11,6 @@ use App\Models\TicketLog;
 use App\Models\Queue;
 use App\Models\ActivityLog;
 use App\Models\User;
-use App\Http\Controllers\QueueController;
 use App\Notifications\TicketUpdatedNotification;
 use Illuminate\Validation\Rule;
 
@@ -24,48 +23,40 @@ class TicketController extends Controller
 
         // Filter by ticket_number
         if ($request->ticket_number) {
-            $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%')
-                    ->whereNull('deleted_at');
+            $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
         }
 
         // Filter by holder_name
         if ($request->holder_name) {
-            $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%')
-                    ->whereNull('deleted_at');
+            $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%');
         }
 
         // Filter by holder_email
         if ($request->holder_email) {
-            $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%')
-                    ->whereNull('deleted_at');
+            $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%');
         }
 
         // Filter by issue
         if ($request->issue) {
-            $query->where('issue', 'LIKE', '%'.$request->issue.'%')
-                    ->whereNull('deleted_at');
+            $query->where('issue', 'LIKE', '%'.$request->issue.'%');
         }
 
         // Filter by status
         if ($request->status) {
-            $query->where('status', $request->status)
-                    ->whereNull('deleted_at');
+            $query->where('status', $request->status);
         }
 
         // Filter by date range
         if ($request->start_date) {
-            $query->whereDate('updated_at', '>=', $request->start_date)
-                    ->whereNull('deleted_at');
+            $query->whereDate('updated_at', '>=', $request->start_date);
         }
         if ($request->end_date) {
-            $query->whereDate('updated_at', '<=', $request->end_date)
-                    ->whereNull('deleted_at');
+            $query->whereDate('updated_at', '<=', $request->end_date);
         }
 
         // Filter by next in line queued tickets
         if ($request->nextQueued) {
-            $query->where('status', 'queued')
-                    ->whereNull('deleted_at');
+            $query->where('status', 'queued');
             return $query->orderBy('created_at', 'asc')->take(5)->get();
         }
 
@@ -75,31 +66,49 @@ class TicketController extends Controller
     // Create a new ticket (Guest or User)
     public function store(Request $request)
     {
+        // 1. Validation: Allow nullable fields so the empty form passes validation
         $validated = $request->validate([
-            'holder_name' => 'required|string',
-            'holder_email' => 'required|email',
+            'holder_name'   => 'nullable|string',
+            'holder_email'  => 'nullable|email',
             'ticket_number' => [
                 'required',
                 'string',
-                Rule::unique('tickets', 'ticket_number')->withoutTrashed(),
+                Rule::unique('tickets', 'ticket_number'),
             ],
-            'issue' => 'required|string'
+            'issue'         => 'nullable|string'
         ]);
 
-        $ticket = Ticket::create($validated);
+        $currentUser = auth('web')->user();
 
-        // Determine if guest or logged-in user
-        $user = auth('web')->user();
-        $updaterName = $user ? $user->name : 'Guest';
+        // 2. Prepare Data & Auto-Fill Logic
+        $data = $validated;
+
+        // Auto-fill Name: Use Agent's name if logged in, otherwise "Walk-in User"
+        if (empty($data['holder_name'])) {
+            $data['holder_name'] = $currentUser ? $currentUser->name : 'Walk-in User';
+        }
+
+        // Auto-fill Email: Use Agent's email if logged in, otherwise a dummy email
+        // This satisfies the database "NOT NULL" requirement
+        if (empty($data['holder_email'])) {
+            $data['holder_email'] = $currentUser ? $currentUser->email : 'walk-in@system.local';
+        }
+
+        $data['status'] = 'pending approval'; // Default status
+
+        // 3. Create Ticket
+        $ticket = Ticket::create($data);
+
+        $updaterName = $currentUser ? $currentUser->name : 'Guest';
 
         TicketLog::create([
             'ticket_id' => $ticket->id,
-            'user_id'   => $user ? $user->id : null,
+            'user_id'   => $currentUser ? $currentUser->id : null,
             'action'    => 'Ticket created by ' . $updaterName,
         ]);
 
-        // ✅ NOTIFY ADMINS: Send 'is_new' flag
-        $this->notifyAdmins($ticket, ['is_new' => true], $user);
+        // Notify Admins
+        $this->notifyAdmins($ticket, ['is_new' => true], $currentUser);
 
         return response()->json($ticket, 201);
     }
@@ -131,7 +140,6 @@ class TicketController extends Controller
             $changes = [
                 'it_personnel_id' => ['from' => $originalAssignee, 'to' => $ticket->assigned_to]
             ];
-            // Notify Admins and relevant users
             $this->notifyRelevantUsers($ticket, $changes, auth('web')->user());
         }
 
@@ -141,20 +149,19 @@ class TicketController extends Controller
     // Delete a ticket
     public function destroy(Ticket $ticket)
     {
-        $ticket->delete();
+        // Log before deleting so we have the ID history
+        TicketLog::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => auth('web')->id(),
+            'action'    => 'Ticket has been deleted'
+        ]);
 
-        // Log the status change
-        TicketLog::add(
-            $ticket->id,
-            auth('web')->id(),
-            'Ticket has been deleted'
-        );
-
-        // Log user activity
         $this->logActivity(
             auth('web')->id(),
             "Deleted ticket #{$ticket->ticket_number}"
         );
+
+        $ticket->delete();
 
         return response()->json(['message' => 'Ticket deleted']);
     }
@@ -198,12 +205,11 @@ class TicketController extends Controller
                     $ticketLog_message = "Ticket status changed to " . $validated['status'];
                 }
 
-                // Log the status change
-                TicketLog::add(
-                    $ticket->id,
-                    $currentUser ? $currentUser->id : null,
-                    $ticketLog_message
-                );
+                TicketLog::create([
+                    'ticket_id' => $ticket->id,
+                    'user_id'   => $currentUser ? $currentUser->id : null,
+                    'action'    => $ticketLog_message
+                ]);
 
                 // Log user activity
                 $this->logActivity(
@@ -215,30 +221,12 @@ class TicketController extends Controller
                 $ticket->status = $validated['status'];
                 $ticket->save();
 
-                // ✅ SEND NOTIFICATION
+                // Notification logic
                 $changes = [
                     'status' => ['from' => $oldStatus, 'to' => $ticket->status]
                 ];
 
-                // Call the function to notify ALL users
                 $this->notifyAdmins($ticket, $changes, $currentUser);
-
-                /*  Comment by Joshua Icalina
-                    I dont understand this code:
-                        if ($ticket->user_id) {...}
-
-                    'tickets' table has no 'user_id' column.
-                    necessary ba ning i-add pa dre nga di mani magamit, at least, sa current structure sa system?
-                */
-
-                // Notify Ticket Owner (if they have a user account)
-                if ($ticket->user_id) {
-                    $owner = User::find($ticket->user_id);
-                    // Don't notify owner if they are the one making the change
-                    if ($owner && (!$currentUser || $owner->id !== $currentUser->id)) {
-                        $owner->notify(new TicketUpdatedNotification($ticket, $changes, $currentUser));
-                    }
-                }
 
                 return response()->json(['message' => 'Ticket status updated successfully']);
             }
@@ -257,20 +245,9 @@ class TicketController extends Controller
     private function notifyAdmins($ticket, $changes, $updater)
     {
         try {
-            // Get ALL users
             $recipients = User::all();
-
-            // ⚠️ UNCOMMENT BELOW IN PRODUCTION
-            /*
-            if ($updater) {
-                $recipients = $recipients->reject(function ($user) use ($updater) {
-                    return $user->id === $updater->id;
-                });
-            }
-            */
-
             if ($recipients->count() > 0) {
-                Notification::send($recipients, new TicketUpdatedNotification($ticket, $changes, $updater));
+                // Notification::send($recipients, new TicketUpdatedNotification($ticket, $changes, $updater));
                 Log::info('Notification sent to ' . $recipients->count() . ' users.');
             }
         } catch (\Exception $e) {
@@ -285,22 +262,25 @@ class TicketController extends Controller
         if ($ticket->assigned_to) {
             $assignee = User::find($ticket->assigned_to);
             if ($assignee && (!$updater || $assignee->id !== $updater->id)) {
-                $assignee->notify(new TicketUpdatedNotification($ticket, $changes, $updater));
+                // $assignee->notify(new TicketUpdatedNotification($ticket, $changes, $updater));
             }
         }
     }
 
-
     public function addTicketToQueue(Ticket $ticket)
     {
-        //Prevent duplicate queue entries
         if (Queue::where('ticket_id', $ticket->id)->exists()) {
             return response()->json(['message' => 'Queue already exists']);
         }
+
+        // Generate queue number safely without relying on external controller
+        $latestQueue = Queue::max('queue_number');
+        $nextQueueNum = $latestQueue ? $latestQueue + 1 : 1;
+
         $queue = Queue::create([
-            'ticket_id'   => $ticket->id,
-            'assigned_to' => auth('web')->id(),
-            'queue_number' => QueueController::generateQueueNumber(),
+            'ticket_id'    => $ticket->id,
+            'assigned_to'  => auth('web')->id(),
+            'queue_number' => $nextQueueNum,
         ]);
 
         return $queue;
@@ -333,6 +313,5 @@ class TicketController extends Controller
         return response()->json(['queued_tickets' => $queued + $inProgress, 'waiting' => $queued, 'resolved_tickets' => $resolved]);
     }
 
-    // Filter tickets by status
-    public function filterByStatus($status) { return response()->json(Ticket::status($status)->get()); }
+    public function filterByStatus($status) { return response()->json(Ticket::where('status', $status)->get()); }
 }

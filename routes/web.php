@@ -29,7 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ✅ FIXED: Updated path to match your folder structure (views/vue/auth/queue.blade.php)
     Route::get('/queue', function () {
-        return view('vue.queue'); 
+        return view('vue.queue'); // Assuming 'vue.auth.queue' is the correct view path
     })->name('queue');
 
     Route::get('/dashboard', function () {
@@ -60,6 +60,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // -------------------- API CONTROLLERS -------------------- //
 Route::middleware(['auth'])->group(function () {
+    
+    // ✅ FIX: Add the missing route for the current user's activity log (404 Error)
+    // The frontend calls: /user/activity-logs
+    Route::get('/user/activity-logs', [UserController::class, 'getCurrentUserActivityLogs']);
     
     // User Routes
     Route::prefix('users')->group(function () {

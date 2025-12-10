@@ -203,7 +203,7 @@ class UserController extends Controller
 
             // Log user activity
             $this->logActivity(
-                auth()->id() ?? $user->id, // Fallback if auth check fails
+                Auth::id() ?? $user->id, // Fallback if auth check fails
                 "User updated profile"
             );
 
@@ -490,38 +490,41 @@ class UserController extends Controller
     }
 
     // Get current user's activity logs
-    public function getCurrentUserActivityLogs(Request $request)
-    {
-        try {
-            $user = Auth::user();
+// app/Http/Controllers/UserController.php
 
-            if (!$user) {
-                return response()->json(['error' => 'Unauthenticated'], 401);
-            }
+public function getCurrentUserActivityLogs(Request $request)
+{
+    try {
+        $user = Auth::user();
 
-            $perPage = $request->get('per_page', 15);
-
-            // Get activity logs for the current user
-            $activityLogs = ActivityLog::where('user_id', $user->id)
-                ->latest()
-                ->paginate($perPage);
-
-            return response()->json([
-                'activity_logs' => $activityLogs->items(),
-                'pagination' => [
-                    'current_page' => $activityLogs->currentPage(),
-                    'last_page' => $activityLogs->lastPage(),
-                    'per_page' => $activityLogs->perPage(),
-                    'total' => $activityLogs->total(),
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error fetching current user activity logs: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Failed to fetch activity logs',
-                'error' => $e->getMessage()
-            ], 500);
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
         }
+
+        $perPage = $request->get('per_page', 15);
+
+        // ✅ FIX 1: Add .with('ticket') to load the related ticket details
+        $activityLogs = ActivityLog::where('user_id', $user->id)
+            ->with('ticket') 
+            ->latest()
+            ->paginate($perPage);
+
+        return response()->json([
+            'activity_logs' => $activityLogs->items(),
+            'pagination' => [
+                'current_page' => $activityLogs->currentPage(),
+                'last_page' => $activityLogs->lastPage(),
+                'per_page' => $activityLogs->perPage(),
+                'total' => $activityLogs->total(),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching current user activity logs: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Failed to fetch activity logs',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 }

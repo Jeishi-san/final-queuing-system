@@ -1,113 +1,131 @@
 <template>
-	<div
-		class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-				flex flex-col items-center p-5 bg-white text-center
-				shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] rounded-2xl
-				xs:w-full lg:w-[25%]"
-	>
+    <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                flex flex-col items-center p-5 bg-white text-center
+                shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] rounded-2xl
+                xs:w-full lg:w-[25%]"
+    >
 
-		<h3 class="w-full text-2xl font-bold text-[#003D5B] mb-4">
-			My Queue List
-		</h3>
+        <h3 class="w-full text-2xl font-bold text-[#003D5B] mb-4">
+            My Queue List
+        </h3>
 
-		<!-- Tabs -->
-		<div class="flex w-full border-b border-gray-300">
-			<button
-				class="w-1/2 py-2 text-sm font-semibold transition border-b-2"
-				:class="activeTab === 'queued'
-					? 'border-[#003D5B] text-[#003D5B]'
-					: 'border-transparent text-gray-500'"
-				@click="activeTab = 'queued'"
-			>
-				Queued Tickets
-			</button>
+        <div class="flex w-full border-b border-gray-300">
+            <button
+                class="w-1/2 py-2 text-sm font-semibold transition border-b-2"
+                :class="activeTab === 'queued'
+                    ? 'border-[#003D5B] text-[#003D5B]'
+                    : 'border-transparent text-gray-500'"
+                @click="activeTab = 'queued'"
+            >
+                Queued Tickets
+            </button>
 
-			<button
-				class="w-1/2 py-2 text-sm font-semibold transition border-b-2"
-				:class="activeTab === 'my'
-					? 'border-[#003D5B] text-[#003D5B]'
-					: 'border-transparent text-gray-500'"
-				@click="activeTab = 'my'"
-			>
-				My Tickets
-			</button>
-		</div>
+            <button
+                class="w-1/2 py-2 text-sm font-semibold transition border-b-2"
+                :class="activeTab === 'my'
+                    ? 'border-[#003D5B] text-[#003D5B]'
+                    : 'border-transparent text-gray-500'"
+                @click="activeTab = 'my'"
+            >
+                My Tickets
+            </button>
+        </div>
 
-		<!-- TAB CONTENT -->
-		<div class="w-full mt-4 text-left max-h-64 overflow-y-auto">
-			<!-- Queued Tickets Table -->
-			<div v-if="activeTab === 'queued'">
-				<table class="w-full text-sm">
-					<thead class="text-[#003D5B] font-semibold sticky top-0 bg-white">
-						<tr>
-							<th class="pb-2">Queue #</th>
-							<th class="pb-2">Ticket #</th>
-							<th class="pb-2">Status</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="(item, i) in queuedTickets" :key="i" class="text-gray-700">
-							<td class="py-1">{{ item.queue }}</td>
-							<td class="py-1">{{ item.ticket }}</td>
-							<td class="py-1">{{ item.status }}</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+        <div class="w-full mt-4 text-left max-h-64 overflow-y-auto">
+            
+            <div v-if="loading" class="text-center py-4 text-gray-500">
+                <span class="animate-pulse">Loading...</span>
+            </div>
 
-			<!-- My Tickets Table -->
-			<div v-else>
-				<table class="w-full text-sm">
-					<thead class="text-[#003D5B] font-semibold sticky top-0 bg-white">
-						<tr>
-							<th class="pb-2">Ticket #</th>
-							<th class="pb-2">Status</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="(item, i) in myTickets" :key="i" class="text-gray-700">
-							<td class="py-1">{{ item.ticket }}</td>
-							<td class="py-1">{{ item.status }}</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
+            <div v-else-if="activeTab === 'queued'">
+                <div v-if="queuedTickets.length === 0" class="text-center text-gray-400 py-4 text-sm">
+                    No tickets in queue.
+                </div>
+                <table v-else class="w-full text-sm">
+                    <thead class="text-[#003D5B] font-semibold sticky top-0 bg-white">
+                        <tr>
+                            <th class="pb-2">Queue #</th>
+                            <th class="pb-2">Ticket #</th>
+                            <th class="pb-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, i) in queuedTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0">
+                            <td class="py-2">{{ item.queue_number }}</td>
+                            <td class="py-2">{{ item.ticket ? item.ticket.ticket_number : 'N/A' }}</td>
+                            <td class="py-2">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium uppercase"
+                                    :class="{
+                                        'bg-yellow-100 text-yellow-800': item.status === 'queued',
+                                        'bg-blue-100 text-blue-800': item.status === 'in progress',
+                                        'bg-green-100 text-green-800': item.status === 'completed'
+                                    }">
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-	</div>
+            <div v-else>
+                <div v-if="myTickets.length === 0" class="text-center text-gray-400 py-4 text-sm">
+                    You haven't handled any tickets yet.
+                </div>
+                <table v-else class="w-full text-sm">
+                    <thead class="text-[#003D5B] font-semibold sticky top-0 bg-white">
+                        <tr>
+                            <th class="pb-2">Ticket #</th>
+                            <th class="pb-2">Details</th>
+                            <th class="pb-2">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, i) in myTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0">
+                            <td class="py-2 font-medium">{{ item.ticket ? item.ticket.ticket_number : 'Log' }}</td>
+                            <td class="py-2 truncate max-w-[100px]" :title="item.action">{{ item.action }}</td>
+                            <td class="py-2 text-xs text-gray-500">
+                                {{ new Date(item.created_at).toLocaleDateString() }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
 </template>
 
 <script setup>
-	import { ref } from 'vue'
+    import { ref, onMounted } from 'vue'
+    import axios from 'axios';
 
-	const activeTab = ref('queued')
+    const activeTab = ref('queued')
+    const loading = ref(false);
+    
+    // Data containers
+    const queuedTickets = ref([]);
+    const myTickets = ref([]);
 
-	// Dummy data
-	const queuedTickets = ref([
-		{ queue: '01', ticket: 'T-1001', status: 'Pending' },
-		{ queue: '02', ticket: 'T-1002', status: 'In Progress' },
-		{ queue: '03', ticket: 'T-1003', status: 'Pending' },
-		{ queue: '04', ticket: 'T-1004', status: 'In Progress' },
-		{ queue: '05', ticket: 'T-1005', status: 'Pending' },
-		{ queue: '06', ticket: 'T-1006', status: 'In Progress' },
-		{ queue: '07', ticket: 'T-1007', status: 'Pending' },
-		{ queue: '08', ticket: 'T-1008', status: 'In Progress' },
-		{ queue: '09', ticket: 'T-1009', status: 'Pending' },
-		{ queue: '10', ticket: 'T-1010', status: 'In Progress' },
-		{ queue: '11', ticket: 'T-1011', status: 'Pending' },
-	])
+    // Fetch Data on Mount
+    onMounted(async () => {
+        loading.value = true;
+        try {
+            // 1. Fetch Waiting/Queued Tickets (Global Queue)
+            // Ensure this route exists in your web.php or api.php
+            const queueRes = await axios.get('/queues/waiting'); 
+            queuedTickets.value = queueRes.data;
 
-	const myTickets = ref([
-		{ ticket: 'T-2001', status: 'Completed' },
-		{ ticket: 'T-2002', status: 'Pending' },
-		{ ticket: 'T-2003', status: 'Completed' },
-		{ ticket: 'T-2004', status: 'Pending' },
-		{ ticket: 'T-2005', status: 'Completed' },
-		{ ticket: 'T-2006', status: 'Pending' },
-		{ ticket: 'T-2007', status: 'Completed' },
-		{ ticket: 'T-2008', status: 'Pending' },
-		{ ticket: 'T-2009', status: 'Completed' },
-		{ ticket: 'T-2010', status: 'Pending' },
-		{ ticket: 'T-2011', status: 'Completed' },
-	])
-</script>
+            // 2. Fetch "My Tickets" (User Activity Log or Assigned Tickets)
+            // Using activity logs to show history
+            const myHistoryRes = await axios.get('/user/activity-logs');
+            myTickets.value = myHistoryRes.data.activity_logs; 
+
+        } catch (error) {
+            console.error("Failed to load user queue lists:", error);
+        } finally {
+            loading.value = false;
+        }
+    });
+</script>	
