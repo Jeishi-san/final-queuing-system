@@ -42,9 +42,8 @@
             <div class="flex items-center mt-2" v-if="isSidebarOpen">
                 <img :src="icon" alt="Login Icon" class="w-30 h-30"/>
                 <span class="text-3xl font-bold ml-2">
-                    IT Ops <br/>
-                    Queuing<br/>
-                    System
+                    CNX IT Ops<br/>
+                    enQ
                 </span>
             </div>
 
@@ -93,7 +92,7 @@
         <div v-if="!isSidebarOpen" class="mt-4 flex justify-center">
             <a href="/dashboard/notifications" class="relative p-2 text-[#003D5B] hover:bg-gray-700 hover:text-white rounded transition-colors">
                 <FontAwesomeIcon :icon="['fas', 'bell']" class="text-xl" />
-                <span v-if="$notificationStore?.unreadCount > 0" 
+                <span v-if="$notificationStore?.unreadCount > 0"
                       class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-4 h-4 flex items-center justify-center">
                     {{ $notificationStore.unreadCount > 99 ? '99+' : $notificationStore.unreadCount }}
                 </span>

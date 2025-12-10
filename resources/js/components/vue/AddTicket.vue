@@ -1,20 +1,23 @@
 <template>
-    <div class="absolute right-0 top-0  h-full bg-white flex flex-col items-center text-center shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] p-5
-                xs:w-full
-                lg:w-[50%]">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                flex flex-col items-center
+                p-5 h-[25%] bg-white text-center
+                shadow-[0_10px_50px_5px_rgba(0,0,0,0.3)] rounded-2xl
 
-        <h3 class="w-full text-left text-2xl font-bold text-[#003D5B] mt-5">Add Ticket</h3>
+                xs:w-full
+                lg:w-[25%]">
+
+        <h3 class="w-full text-2xl font-bold text-[#003D5B] mt-4">Add Ticket</h3>
 
         <!-- Add Ticket Form -->
-        <form @submit.prevent="handleSubmit" class="space-y-5 w-full mt-12">
+        <form @submit.prevent="handleSubmit" class="space-y-5 w-full mt-4">
             <!-- Name Input -->
-            <div class="relative">
+            <div class="relative hidden">
                 <input
                     type="text"
                     id="name"
                     v-model="form.holder_name"
                     placeholder="Name"
-                    required
                     class="w-full pl-3 pr-3 py-2
                             bg-[#003D5B]/20 text-[#003D5B]
                             rounded-lg
@@ -27,13 +30,12 @@
             </div>
 
             <!-- Email Input -->
-            <div class="relative">
+            <div class="relative hidden">
                 <input
                     type="email"
                     id="email"
                     v-model="form.holder_email"
                     placeholder="Email"
-                    required
                     class="w-full pl-3 pr-3 py-2
                             bg-[#003D5B]/20 text-[#003D5B]
                             rounded-lg
@@ -51,7 +53,7 @@
                     type="text"
                     id="ticket_id"
                     v-model="form.ticket_number"
-                    placeholder="Ticket ID"
+                    placeholder="Ticket Number"
                     required
                     class="w-full pl-3 pr-3 py-2
                             bg-[#003D5B]/20 text-[#003D5B]

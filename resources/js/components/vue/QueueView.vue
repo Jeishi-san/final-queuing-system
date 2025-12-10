@@ -6,6 +6,7 @@
     import InProgress from './cards/InProgress.vue';
     import NextInLine from './cards//NextInLine.vue';
     import AddTicket from './AddTicket.vue';
+    import UserQueuelist from './UserQueueList.vue';
     import TicketSubmitted from './tools/TicketSubmitted.vue';
     import FailedTicketSubmission from './tools/UnsuccessfulTicketSubmission.vue';
 
@@ -16,6 +17,9 @@
     const showAddTicket = ref(false);
     const ticketSubmitted = ref(false);
     const failedTicketSubmitted = ref(false);
+
+    const showMenu = ref(false);
+    const showUserQueueList = ref(false);
 
     // keep timer ids to clear if component unmounts
     let showTimer = null;
@@ -88,7 +92,7 @@
 <template>
     <div class="relative
                 xs:flex xs:flex-col xs:items-center">
-        <header class="p-4 bg-white shadow-md
+        <header class="p-4 bg-white shadow-md z-50
                         xs:w-full xs:flex xs:flex-col xs:items-center
                         md:flex-row md:justify-between md:px-8">
 
@@ -110,7 +114,7 @@
                 <Clock/>
             </div>
         </header>
-        <a href="/">
+        <!-- <a href="/">
             <button
                 @click="$emit('prev_page')"
                 class=" text-white mt-5 p-1 px-2 hover:text-[#029cda] hover:bg-white rounded-[100%] transition"
@@ -119,9 +123,79 @@
                     <FontAwesomeIcon :icon="['fas', 'house']" />
                 </span>
             </button>
-        </a>
+        </a> -->
 
-        <div class="px-10 py-14 pt-7
+        <!-- Menu Button -->
+        <button
+            @click="showMenu = !showMenu"
+            class="text-white bg-[#029cda] px-3 py-1 pt-5 rounded-md rounded-t-none shadow transition
+                    absolute top-24 left-10 z-10"
+        >
+            <span class="text-md">
+                Menu
+                <FontAwesomeIcon :icon="['fas', showMenu ? 'caret-up' : 'caret-down']"/>
+            </span>
+        </button>
+
+        <!-- Dropdown -->
+        <transition
+            enter-active-class="transition-all duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-2"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition-all duration-150 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 -translate-y-2"
+        >
+            <div
+                v-if="showMenu"
+                class="bg-[#029cda]/95 rounded-xl shadow-xl mt-2 w-40 text-white
+                        absolute top-36 left-12 z-0"
+            >
+                <!-- My Queues -->
+                <button
+                    @click="showUserQueueList = !showUserQueueList"
+                    class="group w-full text-left px-3 py-2 rounded-lg transition
+                        hover:bg-white hover:text-[#029cda]"
+                >
+                    <FontAwesomeIcon
+                        :icon="['fas', 'ticket']"
+                        class="-rotate-45 mr-2"
+                    />
+                    My Queues
+                </button>
+
+                <!-- Add Ticket -->
+                <button
+                    @click="showAddTicket = !showAddTicket"
+                    class="group w-full text-left px-3 py-2 rounded-lg transition
+                        hover:bg-white hover:text-[#029cda]"
+                >
+                    <FontAwesomeIcon
+                        :icon="['fas', 'plus']"
+                        class="w-3 h-3 inline-block mr-2 p-[2px] border-2 border-white rounded-full transition
+                                group-hover:border-[#029cda]'"
+                    />
+                    Add Ticket
+                </button>
+
+                <!-- Logout -->
+                <button
+                    @click="logout"
+                    class="group w-full text-left px-3 py-2 rounded-lg transition
+                        hover:bg-white hover:text-[#029cda]"
+                >
+                    <FontAwesomeIcon
+                        :icon="['fas', 'right-from-bracket']"
+                        class="mr-2"
+                    />
+                    Logout
+                </button>
+            </div>
+        </transition>
+
+
+
+        <div class="px-10 py-14
                     xs:w-full xs:space-y-10
                     xl:flex xl:space-x-10 xl:space-y-0">
             <!-- LEFT SIDE -->
@@ -161,25 +235,45 @@
                 leave-to-class="opacity-0"
             >
                 <div
-                    v-if="showAddTicket"
-                    @click="showAddTicket = false"
-                    class="fixed inset-0 bg-black/30 transition-opacity backdrop-blur-sm z-0"
+                    v-if="showAddTicket || showUserQueueList"
+                    @click="showAddTicket? showAddTicket = false : showUserQueueList = false"
+                    class="fixed inset-0 bg-black/30 transition-opacity backdrop-blur-sm z-20"
                 ></div>
             </transition>
 
             <!-- Slide Transition Wrapper -->
             <transition
                 name="slide"
-                enter-active-class="transform transition duration-500"
-                enter-from-class="translate-x-full opacity-0"
-                enter-to-class="translate-x-0 opacity-100"
-                leave-active-class="transform transition duration-500"
-                leave-from-class="translate-x-0 opacity-100"
-                leave-to-class="translate-x-full opacity-0"
+                enter-active-class="transition-all duration-300 ease-out"
+                enter-from-class="-translate-y-3 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+
+                leave-active-class="transition-all duration-300 ease-in"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="-translate-y-3 opacity-0"
+            >
+
+                <!-- side panel for User Queue List -->
+                <UserQueuelist class="z-50"
+                    v-if="showUserQueueList"
+                />
+
+            </transition>
+
+            <!-- Slide Transition Wrapper -->
+            <transition
+                name="slide"
+                enter-active-class="transition-all duration-300 ease-out"
+                enter-from-class="-translate-y-3 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+
+                leave-active-class="transition-all duration-300 ease-in"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="-translate-y-3 opacity-0"
             >
 
                 <!-- side panel for Add Ticket Component -->
-                <AddTicket
+                <AddTicket class="z-50"
                     v-if="showAddTicket"
                     @submitted="handleTicketSubmitted"
                     @failed="handleFailedTicketSubmission"
@@ -189,7 +283,7 @@
 
             <!-- Floating Button -->
             <!-- Clicked: url have ./addding-ticket -->
-            <button
+            <!-- <button
                 v-if="!showAddTicket"
                 @click="showAddTicket = !showAddTicket"
                 class="fixed right-0 bg-white text-[#003D5B] p-1 px-2 rounded-tl-xl rounded-bl-xl shadow-lg hover:text-white hover:bg-[#029cda] transition
@@ -199,7 +293,7 @@
                 <span class="">
                     <FontAwesomeIcon :icon="['fas', 'arrow-left-long']" />
                 </span>
-            </button>
+            </button> -->
 
             <!-- Close button when screen is xs and md -->
             <button

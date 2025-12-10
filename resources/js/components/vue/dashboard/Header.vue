@@ -248,7 +248,7 @@
                 </div>
             </transition>
 
-            <button v-if="!isSearching" @click="toggleSearch" class="hover:text-gray-300 transition-colors cursor-pointer">
+            <button v-if="isSearching" @click="toggleSearch" class="hover:text-gray-300 transition-colors cursor-pointer">
                 <FontAwesomeIcon :icon="['fas', 'search']" class="text-white text-xl"/>
             </button>
 
