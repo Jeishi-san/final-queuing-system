@@ -1,10 +1,9 @@
 <script setup>
 import { ref } from "vue";
-// import axios from 'axios'; // ← ADD THIS IMPORT
+import axios from 'axios'; 
 
-// // Set base URL for Herd
-// axios.defaults.baseURL = 'https://final-queuing-system.test';
-// axios.defaults.withCredentials = true; // ← IMPORTANT for Sanctum
+// Set base URL for Herd
+axios.defaults.withCredentials = true; 
 
 // img imports
 import icon from '../../../assets/img/login-icon.png';
@@ -17,23 +16,29 @@ const form = ref({
 const handleLogin = async () => {
     console.log("Login attempted with:", form.value);
     try {
-        // ✅ FIXED: Use correct Herd URL for CSRF cookie
         await axios.get("/sanctum/csrf-cookie");
 
-        // ✅ FIXED: Use correct login endpoint
-        const response = await axios.post("/login", {
+        // 1. Perform Login
+        await axios.post("/login", {
             email: form.value.email,
             password: form.value.password,
         });
 
-        console.log("Login successful:", response.data);
+        // 2. Fetch User to check Role
+        const userRes = await axios.get("/api/user");
+        const role = userRes.data.role;
 
-        // Redirect to dashboard
-        window.location.href = "/dashboard";
+        console.log("Login successful. Role:", role);
+
+        // 3. Redirect based on role
+        if (role === 'agent') {
+            window.location.href = "/queue";
+        } else {
+            window.location.href = "/dashboard";
+        }
+
     } catch (error) {
         console.error("Login error:", error);
-
-        // Better error handling
         if (error.response?.data?.errors) {
             const errors = error.response.data.errors;
             let errorMessage = 'Login failed:\n';
@@ -48,14 +53,9 @@ const handleLogin = async () => {
         }
     }
 };
-
-function onLoginSuccess() {
-    globalState.loginSuccess = true
-}
 </script>
 
 <template>
-    <!-- Your existing template remains the same -->
     <div class="min-h-screen flex flex-col items-center justify-center gap-10">
         <a href="/">
             <button
@@ -67,80 +67,87 @@ function onLoginSuccess() {
             </button>
         </a>
         <div class="w-[325px] flex items-center justify-center">
-            <div class="flex flex-col items-center w-full max-w-sm h-[440px] bg-white rounded-[15px] shadow-[0_70px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 ">
-                <!-- Icon -->
+            <div class="flex flex-col items-center w-full max-w-sm min-h-[440px] bg-white rounded-[15px] shadow-[0_70px_100px_50px_rgba(0,0,0,0.3)] p-3 pt-6 pb-6">
+                
                 <div class="flex justify-center mb-1">
                     <a href="/">
                         <img :src="icon" alt="Login Icon" class="w-16 h-16" />
                     </a>
                 </div>
 
-                <!-- System Title -->
-                <h2 class="text-3xl font-bold text-center text-[#003D5B] mt-2 mb-12"> IT Ops Queuing System</h2>
+                <h2 class="text-3xl font-bold text-center text-[#003D5B] mt-2 mb-8"> IT Ops Queuing System</h2>
 
-                <!-- Login Form -->
                 <form @submit.prevent="handleLogin" class="space-y-5 w-[80%]">
-                    <!-- Email Input -->
                     <div class="relative">
-                    <input
-                        type="email"
-                        id="email"
-                        v-model="form.email"
-                        placeholder="Email"
-                        required
-                        class="w-full pl-3 pr-3 py-2
-                                bg-[#003D5B]/20 text-[#003D5B]
-                                rounded-lg
-                                border border-transparent
-                                hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
-                                focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
-                                placeholder-[#003D5B]/70
-                                transition-all duration-300"
-                    />
-                    <span class="absolute right-3 top-2 text-[#003D5B]">
-                        <FontAwesomeIcon :icon="['fas', 'user']" />
-                    </span>
+                        <input
+                            type="email"
+                            id="email"
+                            v-model="form.email"
+                            placeholder="Email"
+                            required
+                            class="w-full pl-3 pr-3 py-2
+                                   bg-[#003D5B]/20 text-[#003D5B]
+                                   rounded-lg
+                                   border border-transparent
+                                   hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
+                                   focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
+                                   placeholder-[#003D5B]/70
+                                   transition-all duration-300"
+                        />
+                        <span class="absolute right-3 top-2 text-[#003D5B]">
+                            <FontAwesomeIcon :icon="['fas', 'user']" />
+                        </span>
                     </div>
 
-                    <!-- Password Input -->
                     <div class="relative">
-                    <input
-                        type="password"
-                        id="password"
-                        v-model="form.password"
-                        placeholder="Password"
-                        required
-                        class="w-full pl-3 pr-3 py-2
-                                bg-[#003D5B]/20 text-[#003D5B]
-                                rounded-lg
-                                border border-transparent
-                                hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
-                                focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
-                                placeholder-[#003D5B]/70
-                                transition-all duration-300"
-                    />
-                    <span class="absolute right-3 top-2 text-[#003D5B]">
-                        <FontAwesomeIcon :icon="['fas', 'lock']" />
-                    </span>
+                        <input
+                            type="password"
+                            id="password"
+                            v-model="form.password"
+                            placeholder="Password"
+                            required
+                            class="w-full pl-3 pr-3 py-2
+                                   bg-[#003D5B]/20 text-[#003D5B]
+                                   rounded-lg
+                                   border border-transparent
+                                   hover:bg-[#003D5B]/30 hover:border-[#003D5B]/40
+                                   focus:outline-none focus:ring-2 focus:ring-[#003D5B]/70 focus:border-[#003D5B]
+                                   placeholder-[#003D5B]/70
+                                   transition-all duration-300"
+                        />
+                        <span class="absolute right-3 top-2 text-[#003D5B]">
+                            <FontAwesomeIcon :icon="['fas', 'lock']" />
+                        </span>
                     </div>
 
-                    <!-- Submit Button -->
                     <button
                         type="submit"
                         class="w-full py-2
-                                bg-[#003D5B] text-white font-medium
-                                rounded-lg
-                                hover:bg-[#029cda]
-                                transition-colors duration-300"
+                               bg-[#003D5B] text-white font-medium
+                               rounded-lg
+                               hover:bg-[#029cda]
+                               transition-colors duration-300"
                     >
-                    Login
+                        Login
                     </button>
                 </form>
 
-                <p class="text-sm my-4">
-                    Don't have an account?
-                    <a href="/register" class="text-blue-600 hover:underline">Register here</a>
-                </p>
+                <div class="w-[80%] mt-8 border-t border-gray-200 pt-4">
+                    <p class="text-xs text-center text-gray-500 mb-3">Register as new user:</p>
+                    <div class="flex gap-2">
+                        <a href="/register?role=agent" 
+                           class="flex-1 py-2 text-xs text-center border border-[#003D5B] text-[#003D5B] rounded-md 
+                                  hover:bg-[#003D5B] hover:text-white transition-all duration-300">
+                            Agent
+                        </a>
+                        <a href="/register?role=it_staff" 
+                           class="flex-1 py-2 text-xs text-center border border-[#003D5B] text-[#003D5B] rounded-md 
+                                  hover:bg-[#003D5B] hover:text-white transition-all duration-300">
+                            IT Staff
+                        </a>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

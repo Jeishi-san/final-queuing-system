@@ -1,19 +1,34 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 
 const style_input = 'w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003D5B]';
 
 const form = ref({
-  name: '',
-  role: '',
-  email: '',
-  employee_id: '',
-  password: '',
-  password_confirmation: ''
+    name: '',
+    role: '', 
+    email: '',
+    employee_id: '',
+    password: '',
+    password_confirmation: ''
 })
 
 const loading = ref(false);
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleParam = urlParams.get('role');
+    
+    if (roleParam && ['agent', 'it_staff'].includes(roleParam)) {
+        form.value.role = roleParam;
+    }
+});
+
+const formTitle = computed(() => {
+    if (form.value.role === 'agent') return 'Agent Registration';
+    if (form.value.role === 'it_staff') return 'IT Staff Registration';
+    return 'Register Account';
+});
 
 const register = async () => {
     if (form.value.password !== form.value.password_confirmation) {
@@ -23,13 +38,22 @@ const register = async () => {
 
     loading.value = true;
 
-    try {
-        // First register the account
-        const res = await axios.post('/api/users/create-account', form.value);
-        console.log('Registration successful:', res.data);
+    // 🛡️ SAFETY CHECK: Create a copy of the data
+    const payload = { ...form.value };
 
-        // Then auto-login with the same credentials
-        await loginAfterRegistration();
+    // Explicitly set employee_id to null if registering as an Agent
+    // This prevents sending an empty string "" which might confuse strict validators
+    if (payload.role !== 'it_staff') {
+        payload.employee_id = null; 
+    }
+
+    try {
+        // Send the sanitized 'payload' instead of 'form.value'
+        const res = await axios.post('/register', payload);
+        console.log('Registration successful:', res.data);
+        
+        const targetUrl = res.data.redirect_url || '/dashboard';
+        await loginAfterRegistration(targetUrl);
 
     } catch (err) {
         console.error('Registration error:', err);
@@ -38,7 +62,7 @@ const register = async () => {
             const errors = err.response.data.errors;
             let errorMessage = 'Registration failed:\n';
             for (const field in errors) {
-                errorMessage += `${field}: ${errors[field].join(', ')}\n`;
+                errorMessage += `${errors[field].join(', ')}\n`;
             }
             alert(errorMessage);
         } else if (err.code === 'ERR_NETWORK') {
@@ -51,35 +75,22 @@ const register = async () => {
     }
 }
 
-// Auto-login function
-const loginAfterRegistration = async () => {
+// Updated to accept the targetUrl
+const loginAfterRegistration = async (targetUrl) => {
     try {
-        // Use web login endpoint (not API)
         await axios.post('/login', {
             email: form.value.email,
             password: form.value.password,
-            _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') // CSRF token for web forms
-        }, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
+            _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
         });
 
-        // Redirect to dashboard after successful login
         alert('Account created and logged in successfully!');
-        window.location.href = '/dashboard';
+        window.location.href = targetUrl; // Use the dynamic URL
 
     } catch (loginErr) {
         console.error('Auto-login failed:', loginErr);
-
-        // If auto-login fails, show success message and redirect to login
-        if (loginErr.response?.status === 422) {
-            alert('Account created! Please login with your credentials.');
-            window.location.href = '/login';
-        } else {
-            alert('Account created successfully! Please login.');
-            window.location.href = '/login';
-        }
+        alert('Account created! Please login manually.');
+        window.location.href = '/login';
     }
 }
 </script>
@@ -98,28 +109,44 @@ const loginAfterRegistration = async () => {
         </a>
 
         <div class="max-w-md md:mx-auto bg-white p-6 rounded-2xl shadow-[0_70px_100px_20px_rgba(0,0,0,0.3)] xs:mx-3">
-            <h2 class="text-2xl font-bold mb-4 text-center">Register Account</h2>
-
-            <form @submit.prevent="register">
-            <div class="space-y-3">
-                <input v-model="form.name" type="text" placeholder="Full Name" required :class="style_input" />
-
-                <input v-model="form.role" type="text" placeholder="Role" required :class="style_input" />
-
-                <input v-model="form.email" type="email" placeholder="Email" required :class="style_input" />
-                <input v-model="form.employee_id" type="text" placeholder="Employee ID" required :class="style_input" />
-
-                <input v-model="form.password" type="password" placeholder="Password" required :class="style_input" />
-                <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" required :class="style_input" />
+            
+            <h2 class="text-2xl font-bold mb-2 text-center text-[#003D5B]">{{ formTitle }}</h2>
+            
+            <div v-if="form.role" class="flex justify-center mb-6">
+                <span class="px-3 py-1 bg-blue-100 text-[#003D5B] text-xs font-semibold rounded-full uppercase tracking-wide">
+                    Role: {{ form.role.replace('_', ' ') }}
+                </span>
             </div>
 
-            <button
-                type="submit"
-                :disabled="loading"
-                class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#029cda] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {{ loading ? 'Registering...' : 'Register' }}
-            </button>
+            <form @submit.prevent="register">
+                <div class="space-y-3">
+                    <input v-model="form.name" type="text" placeholder="Full Name" required :class="style_input" />
+
+                    <div v-if="!['agent', 'it_staff'].includes(form.role)">
+                        <select v-model="form.role" required :class="style_input">
+                            <option value="" disabled>Select Role</option>
+                            <option value="agent">Agent</option>
+                            <option value="it_staff">IT Staff</option>
+                        </select>
+                    </div>
+
+                    <input v-model="form.email" type="email" placeholder="Email" required :class="style_input" />
+                    
+                    <div v-if="form.role === 'it_staff'">
+                        <input v-model="form.employee_id" type="text" placeholder="Employee ID" required :class="style_input" />
+                    </div>
+
+                    <input v-model="form.password" type="password" placeholder="Password" required :class="style_input" />
+                    <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" required :class="style_input" />
+                </div>
+
+                <button
+                    type="submit"
+                    :disabled="loading"
+                    class="w-full mt-4 bg-[#003D5B] text-white py-2 rounded-lg hover:bg-[#029cda] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {{ loading ? 'Registering...' : 'Register' }}
+                </button>
             </form>
 
             <p class="text-center text-sm mt-4">

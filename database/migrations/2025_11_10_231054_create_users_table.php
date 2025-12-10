@@ -16,16 +16,18 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->string('image')->nullable();
-            $table->string('employee_id')->unique();
-            $table->string('role');
-            $table->string('department')->default('IT Ops');
+            $table->string('image')->nullable(); // Kept nullable (upload optional at start)
+            
+            // ⬇️ MODIFIED: Made nullable so Agents can register without these
+            $table->string('employee_id')->nullable()->unique(); 
+            $table->string('role'); // Stores 'agent' or 'it_staff'
+            $table->string('department')->nullable(); // Removed default, made nullable
             $table->string('contact_number')->nullable();
+            
             $table->enum('account_status', ['active', 'inactive', 'on-leave'])->default('active');
 
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
-
             $table->timestamps();
         });
 

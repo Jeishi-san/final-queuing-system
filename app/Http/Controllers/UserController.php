@@ -57,8 +57,11 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'employee_id' => 'required|string|max:50|unique:users',
             'role' => 'required|string|max:50',
+            
+            // ✅ UPDATED: Conditional validation for employee_id
+            'employee_id' => 'required_if:role,it_staff|nullable|string|max:50|unique:users',
+            
             'department' => 'nullable|string|max:255',
             'contact_number' => 'nullable|string|max:20',
             'account_status' => 'nullable|in:active,inactive,on-leave',
@@ -73,9 +76,14 @@ class UserController extends Controller
 
         try {
             $userData = $request->only([
-                'name', 'email', 'employee_id', 'role',
+                'name', 'email', 'role',
                 'department', 'contact_number', 'account_status'
             ]);
+            
+            // ✅ HANDLE NULL EMPLOYEE ID LOGIC
+            // If role is agent, force employee_id to null. If IT staff, use the input.
+            $userData['employee_id'] = ($request->role === 'it_staff') ? $request->employee_id : null;
+
             $userData['password'] = Hash::make($request->password);
             $userData['account_status'] = $userData['account_status'] ?? 'active';
 
@@ -107,9 +115,12 @@ class UserController extends Controller
     public function show(User $user)
     {
         try {
-            $user->load(['activityLogs' => function($query) {
-                $query->latest()->limit(10);
-            }]);
+            // Check if relationship exists before loading to prevent errors
+            if (method_exists($user, 'activityLogs')) {
+                $user->load(['activityLogs' => function($query) {
+                    $query->latest()->limit(10);
+                }]);
+            }
 
             return response()->json([
                 'user' => $user,
@@ -136,8 +147,11 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
             'password' => 'sometimes|string|min:8',
-            'employee_id' => 'sometimes|string|max:50|unique:users,employee_id,' . $user->id,
             'role' => 'sometimes|string|max:50',
+            
+            // ✅ UPDATED: Conditional validation for employee_id on update
+            'employee_id' => 'required_if:role,it_staff|nullable|string|max:50|unique:users,employee_id,' . $user->id,
+            
             'department' => 'nullable|string|max:255',
             'contact_number' => 'nullable|string|max:20',
             'account_status' => 'nullable|in:active,inactive,on-leave',
@@ -152,11 +166,26 @@ class UserController extends Controller
 
         try {
             $updateData = $request->only([
-                'name', 'email', 'employee_id', 'role',
+                'name', 'email', 'role',
                 'department', 'contact_number', 'account_status'
             ]);
+            
+            // ✅ HANDLE NULL EMPLOYEE ID LOGIC FOR UPDATE
+            if ($request->has('role')) {
+                if ($request->role === 'agent') {
+                     $updateData['employee_id'] = null;
+                } else {
+                     // If switching to IT staff, ensure employee_id is captured
+                     if ($request->has('employee_id')) {
+                        $updateData['employee_id'] = $request->employee_id;
+                     }
+                }
+            } elseif ($request->has('employee_id')) {
+                 // Logic if role isn't changing but ID is
+                 $updateData['employee_id'] = $request->employee_id;
+            }
 
-            if ($request->has('password')) {
+            if ($request->has('password') && !empty($request->password)) {
                 $updateData['password'] = Hash::make($request->password);
             }
 
@@ -174,12 +203,12 @@ class UserController extends Controller
 
             // Log user activity
             $this->logActivity(
-                auth('web')->id(),
+                auth()->id() ?? $user->id, // Fallback if auth check fails
                 "User updated profile"
             );
 
             return response()->json([
-                'message' => 'User updated successfully niagi dre',
+                'message' => 'User updated successfully',
                 'user' => $user->fresh()
             ]);
 
@@ -206,7 +235,7 @@ class UserController extends Controller
     {
         try {
             // Check if user has related records before deleting
-            $ticketCount = $user->handledTickets()->count();
+            $ticketCount = $user->ticketsHandled()->count(); // Fixed relationship name
             $activityCount = $user->activityLogs()->count();
 
             if ($ticketCount > 0 || $activityCount > 0) {
@@ -246,8 +275,8 @@ class UserController extends Controller
             $perPage = $request->get('per_page', 15);
             $status = $request->get('status');
 
-            $query = $user->handledTickets()
-                ->with(['agent', 'component'])
+            $query = $user->ticketsHandled() // Fixed relationship name
+                ->with(['agent', 'component']) // Assuming 'agent' refers to the creator/requester? Adjust if needed
                 ->latest();
 
             if ($status) {
@@ -282,7 +311,7 @@ class UserController extends Controller
             return response()->json([
                 'average_resolution_time_minutes' => $user->average_resolution_time,
                 'average_resolution_time_human' => $user->average_resolution_time_human,
-                'tickets_handled' => $user->tickets_handled
+                'tickets_handled' => $user->tickets_handled // This is an accessor count
             ]);
 
         } catch (\Exception $e) {
@@ -301,7 +330,7 @@ class UserController extends Controller
             $perPage = $request->get('per_page', 15);
 
             $activityLogs = $user->activityLogs()
-                ->with(['ticket', 'agent'])
+                ->with(['ticket']) // Removed 'agent' unless activity log belongs to agent logic
                 ->latest()
                 ->paginate($perPage);
 
@@ -422,10 +451,12 @@ class UserController extends Controller
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
-            // Load user with recent activity and relationships
-            // $user->load(['activityLogs' => function($query) {
-            //     $query->latest()->limit(10);
-            // }]); -----------------> block commented because $user->load(... is an error
+            // Safe loading of relationships if needed
+            // if (method_exists($user, 'activityLogs')) {
+            //     $user->load(['activityLogs' => function($query) {
+            //         $query->latest()->limit(10);
+            //     }]);
+            // }
 
             return response()->json([
                 'user' => $user,
@@ -494,4 +525,3 @@ class UserController extends Controller
         }
     }
 }
-

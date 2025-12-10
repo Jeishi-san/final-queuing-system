@@ -62,4 +62,14 @@ class User extends Authenticatable
             'details' => $details
         ]);
     }
-}
+
+    // ✅ FIXED: This function is now INSIDE the class brackets
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+} 
+// ✅ The class ends HERE. Nothing should be below this line.
