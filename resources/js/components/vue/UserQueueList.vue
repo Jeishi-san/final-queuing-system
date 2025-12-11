@@ -33,7 +33,7 @@
         </div>
 
         <div class="w-full mt-4 text-left max-h-64 overflow-y-auto">
-            
+
             <div v-if="loading" class="text-center py-4 text-gray-500">
                 <span class="animate-pulse">Loading...</span>
             </div>
@@ -55,9 +55,9 @@
                             <td class="py-2">{{ item.queue_number }}</td>
                             <td class="py-2">{{ item.ticket ? item.ticket.ticket_number : 'N/A' }}</td>
                             <td class="py-2">
-                                <span 
+                                <span
                                     class="px-2 py-0.5 rounded-full text-xs font-medium uppercase"
-                                    
+
                                     :class="getStatusClasses(item.ticket ? item.ticket.status : 'default')"
                                 >
                                     {{ item.ticket ? item.ticket.status : 'Unknown' }}
@@ -82,18 +82,18 @@
                     </thead>
                     <tbody>
                         <tr v-for="(item, i) in myTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0 text-center">
-                            
+
                             <td class="py-2 font-medium">{{ item.ticket_number }}</td>
-                            
+
                             <td class="py-2">
-                                <span 
+                                <span
                                     class="px-2 py-0.5 rounded-full text-xs font-medium uppercase"
                                     :class="getStatusClasses(item.status)"
                                 >
                                     {{ item.status }}
                                 </span>
                             </td>
-                            
+
                             <td class="py-2 text-xs text-gray-500">
                                 {{ new Date(item.created_at).toLocaleDateString() }}
                             </td>
@@ -112,10 +112,10 @@
 
     const activeTab = ref('queued')
     const loading = ref(false);
-    
+
     // Data containers
     const queuedTickets = ref([]);
-    const myTickets = ref([]); 
+    const myTickets = ref([]);
 
     // Helper function to return CSS classes based on status
     const getStatusClasses = (status) => {
@@ -141,12 +141,12 @@
         loading.value = true;
         try {
             // 1. Fetch Waiting/Queued Tickets (Global Queue)
-            const queueRes = await axios.get('/queues/waiting'); 
+            const queueRes = await axios.get('/queues/list');
             queuedTickets.value = queueRes.data;
 
             // 2. Fetch My Submitted Tickets
             const myTicketsRes = await axios.get('/agent/submitted-tickets');
-            myTickets.value = myTicketsRes.data; 
+            myTickets.value = myTicketsRes.data;
 
         } catch (error) {
             console.error("Failed to load user queue lists:", error);
