@@ -314,4 +314,27 @@ class TicketController extends Controller
     }
 
     public function filterByStatus($status) { return response()->json(Ticket::where('status', $status)->get()); }
+
+    public function getMySubmittedTickets(Request $request)
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
+
+    try {
+        // Find tickets where the holder_email matches the logged-in user's email
+        // We order by latest creation date.
+        $myTickets = Ticket::where('holder_email', $user->email)
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+
+        return response()->json($myTickets);
+
+    } catch (\Exception $e) {
+        Log::error('Error fetching agent submitted tickets: ' . $e->getMessage());
+        return response()->json(['message' => 'Failed to fetch tickets'], 500);
+    }
+}
 }

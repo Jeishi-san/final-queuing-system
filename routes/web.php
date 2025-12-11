@@ -64,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ FIX: Add the missing route for the current user's activity log (404 Error)
     // The frontend calls: /user/activity-logs
     Route::get('/user/activity-logs', [UserController::class, 'getCurrentUserActivityLogs']);
+    Route::get('/agent/submitted-tickets', [TicketController::class, 'getMySubmittedTickets']);
     
     // User Routes
     Route::prefix('users')->group(function () {

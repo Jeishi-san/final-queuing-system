@@ -28,7 +28,7 @@
                     : 'border-transparent text-gray-500'"
                 @click="activeTab = 'my'"
             >
-                My Tickets
+                My Submitted Tickets
             </button>
         </div>
 
@@ -45,23 +45,22 @@
                 <table v-else class="w-full text-sm">
                     <thead class="text-[#003D5B] font-semibold sticky top-0 bg-white">
                         <tr>
-                            <th class="pb-2">Queue #</th>
-                            <th class="pb-2">Ticket #</th>
-                            <th class="pb-2">Status</th>
+                            <th class="pb-2 text-center">Queue #</th>
+                            <th class="pb-2 text-center">Ticket #</th>
+                            <th class="pb-2 text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(item, i) in queuedTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0">
+                        <tr v-for="(item, i) in queuedTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0 text-center">
                             <td class="py-2">{{ item.queue_number }}</td>
                             <td class="py-2">{{ item.ticket ? item.ticket.ticket_number : 'N/A' }}</td>
                             <td class="py-2">
-                                <span class="px-2 py-0.5 rounded-full text-xs font-medium uppercase"
-                                    :class="{
-                                        'bg-yellow-100 text-yellow-800': item.status === 'queued',
-                                        'bg-blue-100 text-blue-800': item.status === 'in progress',
-                                        'bg-green-100 text-green-800': item.status === 'completed'
-                                    }">
-                                    {{ item.status }}
+                                <span 
+                                    class="px-2 py-0.5 rounded-full text-xs font-medium uppercase"
+                                    
+                                    :class="getStatusClasses(item.ticket ? item.ticket.status : 'default')"
+                                >
+                                    {{ item.ticket ? item.ticket.status : 'Unknown' }}
                                 </span>
                             </td>
                         </tr>
@@ -71,20 +70,30 @@
 
             <div v-else>
                 <div v-if="myTickets.length === 0" class="text-center text-gray-400 py-4 text-sm">
-                    You haven't handled any tickets yet.
+                    You have not submitted any tickets.
                 </div>
                 <table v-else class="w-full text-sm">
                     <thead class="text-[#003D5B] font-semibold sticky top-0 bg-white">
                         <tr>
-                            <th class="pb-2">Ticket #</th>
-                            <th class="pb-2">Details</th>
-                            <th class="pb-2">Date</th>
+                            <th class="pb-2 text-center">Ticket #</th>
+                            <th class="pb-2 text-center">Status</th>
+                            <th class="pb-2 text-center">Date Created</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(item, i) in myTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0">
-                            <td class="py-2 font-medium">{{ item.ticket ? item.ticket.ticket_number : 'Log' }}</td>
-                            <td class="py-2 truncate max-w-[100px]" :title="item.action">{{ item.action }}</td>
+                        <tr v-for="(item, i) in myTickets" :key="i" class="text-gray-700 border-b border-gray-100 last:border-0 text-center">
+                            
+                            <td class="py-2 font-medium">{{ item.ticket_number }}</td>
+                            
+                            <td class="py-2">
+                                <span 
+                                    class="px-2 py-0.5 rounded-full text-xs font-medium uppercase"
+                                    :class="getStatusClasses(item.status)"
+                                >
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                            
                             <td class="py-2 text-xs text-gray-500">
                                 {{ new Date(item.created_at).toLocaleDateString() }}
                             </td>
@@ -106,21 +115,38 @@
     
     // Data containers
     const queuedTickets = ref([]);
-    const myTickets = ref([]);
+    const myTickets = ref([]); 
+
+    // Helper function to return CSS classes based on status
+    const getStatusClasses = (status) => {
+        switch (status) {
+            case 'queued':
+            case 'pending approval':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'in progress':
+                return 'bg-blue-100 text-blue-800';
+            case 'resolved':
+                return 'bg-green-100 text-green-800';
+            case 'on hold':
+            case 'cancelled':
+            case 'dequeued':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     // Fetch Data on Mount
     onMounted(async () => {
         loading.value = true;
         try {
             // 1. Fetch Waiting/Queued Tickets (Global Queue)
-            // Ensure this route exists in your web.php or api.php
             const queueRes = await axios.get('/queues/waiting'); 
             queuedTickets.value = queueRes.data;
 
-            // 2. Fetch "My Tickets" (User Activity Log or Assigned Tickets)
-            // Using activity logs to show history
-            const myHistoryRes = await axios.get('/user/activity-logs');
-            myTickets.value = myHistoryRes.data.activity_logs; 
+            // 2. Fetch My Submitted Tickets
+            const myTicketsRes = await axios.get('/agent/submitted-tickets');
+            myTickets.value = myTicketsRes.data; 
 
         } catch (error) {
             console.error("Failed to load user queue lists:", error);
@@ -128,4 +154,4 @@
             loading.value = false;
         }
     });
-</script>	
+</script>
