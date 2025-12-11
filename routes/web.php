@@ -24,13 +24,9 @@ Route::get('/', function () {
     return view('vue.home');
 });
 
-// -------------------- PROTECTED ROUTES -------------------- //
-Route::middleware(['auth', 'verified'])->group(function () {
-
-    // ✅ FIXED: Updated path to match your folder structure (views/vue/auth/queue.blade.php)
-    Route::get('/queue', function () {
-        return view('vue.queue'); // Assuming 'vue.auth.queue' is the correct view path
-    })->name('queue');
+// -------------------- PROTECTED IT STAFF/ADMIN/SUPER ADMIN ROUTES -------------------- //
+// 🔑 FIX: Use Role Middleware to protect IT Staff views/functions, including 'super_admin'.
+Route::middleware(['auth', 'verified', 'role:it_staff,admin,super_admin'])->group(function () {
 
     Route::get('/dashboard', function () {
         return view('vue.admin.dashboard');
@@ -58,17 +54,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
+// -------------------- AGENT ONLY/GENERAL AUTH ROUTES -------------------- //
+// This route is NOT protected by the specific IT staff role middleware.
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/queue', function () {
+        return view('vue.queue');
+    })->name('queue');
+});
+
+
 // -------------------- API CONTROLLERS -------------------- //
 Route::middleware(['auth'])->group(function () {
     
-    // ✅ FIX: Add the missing route for the current user's activity log (404 Error)
-    // The frontend calls: /user/activity-logs
+    // API Routes that grant full access (IT Staff, Admin, Super Admin)
     Route::get('/user/activity-logs', [UserController::class, 'getCurrentUserActivityLogs']);
     Route::get('/agent/submitted-tickets', [TicketController::class, 'getMySubmittedTickets']);
     
     // User Routes
     Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'getUsers']);
+        // These routes should ideally be protected by a role middleware, but kept outside 
+        // the role group for now based on your previous structure.
+        Route::get('/', [UserController::class, 'getUsers']); 
         Route::post('/', [UserController::class, 'store']);
         Route::get('{user}', [UserController::class, 'show']);
         Route::put('{user}', [UserController::class, 'update']);

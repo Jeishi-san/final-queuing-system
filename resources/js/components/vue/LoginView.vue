@@ -11,6 +11,8 @@ import icon from '../../../assets/img/login-icon.png';
 const form = ref({
     email: "",
     password: "",
+    // You can keep other properties in 'form' if needed for rendering, 
+    // but we will only send email/password in the axios call.
 });
 
 const handleLogin = async () => {
@@ -19,6 +21,7 @@ const handleLogin = async () => {
         await axios.get("/sanctum/csrf-cookie");
 
         // 1. Perform Login
+        // ✅ FIX: Explicitly send ONLY the validated fields (email and password)
         await axios.post("/login", {
             email: form.value.email,
             password: form.value.password,
@@ -30,10 +33,11 @@ const handleLogin = async () => {
 
         console.log("Login successful. Role:", role);
 
-        // 3. Redirect based on role
+        // 3. Redirect based on role (Super Admin, Admin, and IT Staff all go to dashboard)
         if (role === 'agent') {
             window.location.href = "/queue";
         } else {
+            // This covers 'it_staff', 'admin', and 'super_admin' roles
             window.location.href = "/dashboard";
         }
 
@@ -41,11 +45,18 @@ const handleLogin = async () => {
         console.error("Login error:", error);
         if (error.response?.data?.errors) {
             const errors = error.response.data.errors;
-            let errorMessage = 'Login failed:\n';
-            for (const field in errors) {
-                errorMessage += `${errors[field].join(', ')}\n`;
+            const errorKeys = Object.keys(errors);
+
+            // Check if the error is the generic "auth.failed" message from the backend
+            if (errorKeys.length === 1 && errorKeys[0] === 'email' && errors.email[0] === 'These credentials do not match our records.') {
+                 alert('Login failed! Check your email and password.');
+            } else {
+                 let errorMessage = 'Login failed:\n';
+                 for (const field in errors) {
+                     errorMessage += `${errors[field].join(', ')}\n`;
+                 }
+                 alert(errorMessage);
             }
-            alert(errorMessage);
         } else if (error.code === 'ERR_NETWORK') {
             alert('Cannot connect to server. Make sure Laravel Herd is running.');
         } else {
@@ -136,13 +147,13 @@ const handleLogin = async () => {
                     <p class="text-xs text-center text-gray-500 mb-3">Register as new user:</p>
                     <div class="flex gap-2">
                         <a href="/register?role=agent" 
-                           class="flex-1 py-2 text-xs text-center border border-[#003D5B] text-[#003D5B] rounded-md 
-                                  hover:bg-[#003D5B] hover:text-white transition-all duration-300">
+                            class="flex-1 py-2 text-xs text-center border border-[#003D5B] text-[#003D5B] rounded-md 
+                                     hover:bg-[#003D5B] hover:text-white transition-all duration-300">
                             Agent
                         </a>
                         <a href="/register?role=it_staff" 
-                           class="flex-1 py-2 text-xs text-center border border-[#003D5B] text-[#003D5B] rounded-md 
-                                  hover:bg-[#003D5B] hover:text-white transition-all duration-300">
+                            class="flex-1 py-2 text-xs text-center border border-[#003D5B] text-[#003D5B] rounded-md 
+                                     hover:bg-[#003D5B] hover:text-white transition-all duration-300">
                             IT Staff
                         </a>
                     </div>
