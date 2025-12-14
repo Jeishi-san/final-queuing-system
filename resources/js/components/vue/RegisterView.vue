@@ -31,9 +31,17 @@ const formTitle = computed(() => {
 });
 
 const register = async () => {
+    // 1. Password Confirmation Check
     if (form.value.password !== form.value.password_confirmation) {
         alert("Passwords do not match.");
         return;
+    }
+
+    // 2. ✅ UX FIX: Client-side validation for @concentrix.com
+    // This blocks non-Concentrix emails immediately before hitting the server.
+    if (!form.value.email.toLowerCase().endsWith('@concentrix.com')) {
+        alert('Registration Restricted: Only @concentrix.com email addresses are allowed.');
+        return; 
     }
 
     loading.value = true;
@@ -130,7 +138,13 @@ const loginAfterRegistration = async (targetUrl) => {
                         </select>
                     </div>
 
-                    <input v-model="form.email" type="email" placeholder="Email" required :class="style_input" />
+                    <input 
+                        v-model="form.email" 
+                        type="email" 
+                        placeholder="Email (@concentrix.com)" 
+                        required 
+                        :class="style_input" 
+                    />
                     
                     <div v-if="form.role === 'it_staff'">
                         <input v-model="form.employee_id" type="text" placeholder="Employee ID" required :class="style_input" />

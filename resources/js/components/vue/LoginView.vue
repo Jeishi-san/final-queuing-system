@@ -11,29 +11,35 @@ import icon from '../../../assets/img/login-icon.png';
 const form = ref({
     email: "",
     password: "",
-    // You can keep other properties in 'form' if needed for rendering, 
-    // but we will only send email/password in the axios call.
 });
 
 const handleLogin = async () => {
+    // 1. ✅ UX FIX: Client-side validation for @concentrix.com
+    // This gives instant feedback before hitting the server.
+    if (!form.value.email.toLowerCase().endsWith('@concentrix.com')) {
+        alert('Access Restricted: Only @concentrix.com email addresses are allowed.');
+        return; // Stop the function here
+    }
+
     console.log("Login attempted with:", form.value);
+    
     try {
         await axios.get("/sanctum/csrf-cookie");
 
-        // 1. Perform Login
-        // ✅ FIX: Explicitly send ONLY the validated fields (email and password)
+        // 2. Perform Login
+        // ✅ Explicitly send ONLY the validated fields (email and password)
         await axios.post("/login", {
             email: form.value.email,
             password: form.value.password,
         });
 
-        // 2. Fetch User to check Role
+        // 3. Fetch User to check Role
         const userRes = await axios.get("/api/user");
         const role = userRes.data.role;
 
         console.log("Login successful. Role:", role);
 
-        // 3. Redirect based on role (Super Admin, Admin, and IT Staff all go to dashboard)
+        // 4. Redirect based on role
         if (role === 'agent') {
             window.location.href = "/queue";
         } else {
@@ -47,7 +53,7 @@ const handleLogin = async () => {
             const errors = error.response.data.errors;
             const errorKeys = Object.keys(errors);
 
-            // Check if the error is the generic "auth.failed" message from the backend
+            // Handle standard backend validation errors
             if (errorKeys.length === 1 && errorKeys[0] === 'email' && errors.email[0] === 'These credentials do not match our records.') {
                  alert('Login failed! Check your email and password.');
             } else {
@@ -94,7 +100,7 @@ const handleLogin = async () => {
                             type="email"
                             id="email"
                             v-model="form.email"
-                            placeholder="Email"
+                            placeholder="Email (@concentrix.com)"
                             required
                             class="w-full pl-3 pr-3 py-2
                                    bg-[#003D5B]/20 text-[#003D5B]

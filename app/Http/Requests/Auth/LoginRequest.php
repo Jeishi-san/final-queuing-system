@@ -27,7 +27,13 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => [
+                'required', 
+                'string', 
+                'email',
+                // ✅ FIX: Only allow emails ending in @concentrix.com (case-insensitive)
+                'regex:/@concentrix\.com$/i',
+            ],
             'password' => ['required', 'string'],
         ];
     }

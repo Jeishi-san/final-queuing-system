@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\LoginRequest; // ✅ Type Hinting this connects the validation
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +25,8 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        // 1. Validation runs automatically because of 'LoginRequest' type hint above.
+        
         $request->authenticate();
 
         $request->session()->regenerate();
@@ -32,6 +34,14 @@ class AuthenticatedSessionController extends Controller
         // LOG THE LOGIN ACTIVITY
         $this->logActivity($request->user()->id, 'User logged in');
 
+        // 2. ✅ FIX: Role-Based Redirection
+        // Agents go to the Queue page, everyone else (IT Staff, Admin, Super Admin) goes to Dashboard.
+        $user = $request->user();
+        if ($user->role === 'agent') {
+            return redirect()->intended('/queue');
+        }
+
+        // Default redirect for IT Staff / Super Admin
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -41,7 +51,9 @@ class AuthenticatedSessionController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         // LOG THE LOGOUT ACTIVITY
-        $this->logActivity($request->user()->id, 'User logged out');
+        if (Auth::check()) {
+             $this->logActivity($request->user()->id, 'User logged out');
+        }
 
         Auth::guard('web')->logout();
 
