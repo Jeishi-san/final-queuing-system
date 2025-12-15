@@ -187,22 +187,30 @@
 <template>
     <main class="flex w-full h-full px-10 py-5 box-border space-x-5">
         <!-- Left -->
-        <div class="w-[70%] flex flex-col space-y-5 rounded-3xl">
+        <div class="w-[60%] flex flex-col space-y-5 rounded-3xl">
             <!-- left-top -->
-            <div class="flex gap-3">
+            <div class="flex gap-5">
                 <!-- Left Side: Pie Chart -->
-                <div class="w-1/2 bg-white rounded-xl shadow p-5">
-                    <h2 class="text-lg font-semibold mb-2">Ticket Distribution</h2>
-                    <div class="w-[90%] h-[90%] mx-auto">
+                <div class="w-1/2 bg-white rounded-3xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Ticket Distribution</h2>
+                    <div class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsPieChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Right Side: Pie Chart -->
-                <div class="w-1/2 bg-white rounded-xl shadow p-5">
-                    <h2 class="text-lg font-semibold mb-2">Tickets Resolved by Me</h2>
-                    <div class="w-[80%] h-[80%] mx-auto">
-                        <canvas id="ticketsResolvedByMePieChart"></canvas>
+                <!-- Right Side: Pie Chart Staff -->
+                <div class="w-1/2 bg-white rounded-3xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets Resolved by Me</h2>
+                    <div class="w-[85%] h-[85%] mx-auto">
+                        <canvas id="ticketsResolvedByMePieChart" ></canvas>
+                    </div>
+                </div>
+
+                <!-- Right Side: Pie Chart SuperAdmin-->
+                <div class="w-1/2 bg-white rounded-3xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets Resolved by Staff</h2>
+                    <div class="w-[85%] h-[85%] mx-auto">
+                        <canvas id="ticketsResolvedByMePieChart" ></canvas>
                     </div>
                 </div>
             </div>
@@ -215,7 +223,7 @@
                 </div>
 
                 <!-- Table for Ticket List -->
-                <div class="w-full max-h-[350px] flex flex-col">
+                <div class="w-full max-h-[390px] flex flex-col">
                     <!-- Table Header -->
                     <div class="grid grid-cols-3 gap-2 bg-gray-200 p-3 rounded-t-2xl flex-none">
                         <div class="font-semibold text-[#003D5B]">Ticket Number</div>
@@ -241,7 +249,7 @@
         </div>
 
         <!-- Right -->
-        <div class="w-[30%] h-full bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
+        <div class="w-[40%] h-full bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
             <div class="w-full bg-white rounded-3xl flex justify-between pb-5 text-lg">
                 <h1 class="font-semibold">Queue Quick View</h1>
                 <span>{{ waiting ? waiting : 0 }} waiting</span>
@@ -249,7 +257,7 @@
             </div>
 
             <!-- Table for Queue List -->
-            <div class="w-full max-h-[350px] flex flex-col">
+            <div class="w-full max-h-full flex flex-col">
                 <!-- Table Header (FIXED column count) -->
                 <div class="grid grid-cols-2 gap-2 bg-gray-200 p-3 rounded-t-2xl flex-none">
                     <div class="font-semibold text-[#003D5B]">Queue Number</div>

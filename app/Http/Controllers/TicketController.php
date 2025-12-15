@@ -198,7 +198,6 @@ public function index(Request $request)
                 if ($validated['status'] === 'queued') {
                     $this->addTicketToQueue($ticket);
                     $ticket->assigned_to = auth('web')->id();
-                    $ticket->save();
                     $ticketLog_message = "Ticket validated and added to queue";
                 } elseif ($validated['status'] === 'in progress') {
                     $this->updateAssignedUser($ticket);
@@ -312,7 +311,6 @@ public function index(Request $request)
         $saveTicket = Ticket::where('id', $ticket->id)->first();
         if ($saveTicket) {
             $saveTicket->assigned_to = auth('web')->id();
-            $saveTicket->save();
         }
     }
 

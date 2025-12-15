@@ -39,7 +39,7 @@
         try {
             // Fetch queue list
             const resQueues = await axios.get('/queues/waiting'); // <-- your API endpoint
-            queueList.value = resQueues.data;
+            queueList.value = resQueues.data.slice(0, 5);
 
             // Fetch tickets
             const resTickets = await axios.get('/tickets');
