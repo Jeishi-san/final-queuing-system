@@ -198,17 +198,9 @@
                     </div>
                 </div>
 
-                <!-- Right Side: Pie Chart Staff -->
+                <!-- Right Side: Pie Chart -->
                 <div class="w-1/2 bg-white rounded-3xl shadow p-5">
                     <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets Resolved by Me</h2>
-                    <div class="w-[85%] h-[85%] mx-auto">
-                        <canvas id="ticketsResolvedByMePieChart" ></canvas>
-                    </div>
-                </div>
-
-                <!-- Right Side: Pie Chart SuperAdmin-->
-                <div class="w-1/2 bg-white rounded-3xl shadow p-5">
-                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets Resolved by Staff</h2>
                     <div class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsResolvedByMePieChart" ></canvas>
                     </div>
