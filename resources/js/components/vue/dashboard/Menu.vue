@@ -65,10 +65,10 @@
                     <span :class="iconClass">
                         <FontAwesomeIcon :icon="['fas', 'ticket']" />
                     </span>Tickets</a>
-                <a href="/queue" :class="navLinkClass">
+                <!-- <a href="/queue" :class="navLinkClass">
                     <span :class="iconClass">
                         <FontAwesomeIcon :icon="['fas', 'desktop']" />
-                    </span>Queue Display</a>
+                    </span>Queue Display</a> -->
             </ul>
 
             <h3 class="px-10">ACCOUNT</h3>

@@ -28,9 +28,9 @@ public function index(Request $request)
     if ($user && $user->role !== 'super_admin') {
         // Apply your specific filtering for non-Super Admins (IT Staff, Agents) here.
         // If your IT staff/Agents should ONLY see certain tickets, add that logic here.
-        
+
         // Example: Only show tickets not resolved/cancelled to non-Super Admins
-        // $query->whereNotIn('status', ['resolved', 'cancelled']); 
+        // $query->whereNotIn('status', ['resolved', 'cancelled']);
     }
 
     // Filter by ticket_number
@@ -197,6 +197,8 @@ public function index(Request $request)
 
                 if ($validated['status'] === 'queued') {
                     $this->addTicketToQueue($ticket);
+                    $ticket->assigned_to = auth('web')->id();
+                    $ticket->save();
                     $ticketLog_message = "Ticket validated and added to queue";
                 } elseif ($validated['status'] === 'in progress') {
                     $this->updateAssignedUser($ticket);
@@ -306,6 +308,12 @@ public function index(Request $request)
             $queue->assigned_to = auth('web')->id();
             $queue->save();
         }
+
+        $saveTicket = Ticket::where('id', $ticket->id)->first();
+        if ($saveTicket) {
+            $saveTicket->assigned_to = auth('web')->id();
+            $saveTicket->save();
+        }
     }
 
     private function logActivity($userId, $action)
@@ -329,25 +337,73 @@ public function index(Request $request)
     public function filterByStatus($status) { return response()->json(Ticket::where('status', $status)->get()); }
 
     public function getMySubmittedTickets(Request $request)
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    if (!$user) {
-        return response()->json(['message' => 'Unauthenticated'], 401);
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        try {
+            // Find tickets where the holder_email matches the logged-in user's email
+            // We order by latest creation date.
+            $myTickets = Ticket::where('holder_email', $user->email)
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+
+            return response()->json($myTickets);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching agent submitted tickets: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to fetch tickets'], 500);
+        }
     }
 
-    try {
-        // Find tickets where the holder_email matches the logged-in user's email
-        // We order by latest creation date.
-        $myTickets = Ticket::where('holder_email', $user->email)
-                            ->orderBy('created_at', 'desc')
-                            ->get();
+    /**
+     * Return ticket summary for dashboard charts
+     */
+    public function summary()
+    {
+        // Count tickets by status
+        $statusCounts = Ticket::select('status')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')   // key: status, value: count
+            ->toArray();
 
-        return response()->json($myTickets);
+        // Ensure all statuses exist even if count is 0
+        $allStatuses = [
+            'pending approval',
+            'queued',
+            'in progress',
+            'on hold',
+            'resolved',
+            'cancelled',
+            'dequeued'
+        ];
 
-    } catch (\Exception $e) {
-        Log::error('Error fetching agent submitted tickets: ' . $e->getMessage());
-        return response()->json(['message' => 'Failed to fetch tickets'], 500);
+        foreach ($allStatuses as $status) {
+            if (!isset($statusCounts[$status])) {
+                $statusCounts[$status] = 0;
+            }
+        }
+
+        // Count tickets resolved by current user vs others
+        $mineCount = Ticket::where('status', 'Resolved')
+            ->where('assigned_to', Auth::id()) // assuming you track who resolved
+            ->count();
+
+        $othersCount = Ticket::where('status', 'Resolved')
+            ->where('assigned_to', '!=', Auth::id())
+            ->count();
+
+        return response()->json([
+            'status_counts' => $statusCounts,
+            'mine_vs_others' => [
+                'mine' => $mineCount,
+                'others' => $othersCount,
+            ],
+            'waiting' => Ticket::where('status', 'Queued')->count(), // optional for your waiting count
+        ]);
     }
-}
 }

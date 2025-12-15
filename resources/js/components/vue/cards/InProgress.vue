@@ -40,7 +40,7 @@
 defineProps({
   title: {
     type: String,
-    default: "In Progress",
+    default: "In Progress Ticket",
   },
   queueNum: {
     type: String,

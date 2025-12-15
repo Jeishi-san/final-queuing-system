@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             // 🔑 1. SUPER ADMIN ACCOUNT (Added)
             [
                 'name' => 'Super Admin',
-                'email' => 'super.admin@cnx.test',
+                'email' => 'super.admin@concentrix.com',
                 'password' => Hash::make('password'),
                 'image' => 'super_admin.jpg',
                 'employee_id' => 'SUPA001',

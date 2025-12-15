@@ -1,210 +1,274 @@
-<template>
-    <main class="flex-1 px-10 py-5 overflow-y-auto box-border">
-        <!-- Top cards -->
-        <div class="h-[35%] flex space-x-5 mb-[2rem]">
-            <!-- In Progress Carousel -->
-            <div class="w-[50%] overflow-hidden relative  bg-white rounded-3xl p-5">
-                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">In Progress</h3>
-                <div v-if="inProgressList.length == 0" class="flex flex-col justify-center items-center">
-                    <h1 class="text-7xl font-bold text-[#003D5B] my-2">none</h1>
-                </div>
-                <div v-if="inProgressList.length > 0" class="flex flex-col justify-center items-center">
-                    <!-- Animate Queue Number -->
-                    <div class="relative overflow-hidden">
-                        <transition name="slide-x" mode="out-in">
-                        <h1 :key="currentCard.queue_number" class="text-7xl font-bold text-[#003D5B] my-2">
-                            {{ currentCard.queue_number }}
-                        </h1>
-                        </transition>
-                    </div>
-                    <!-- Animate Ticket Number span -->
-                    <p class="text-base text-gray-700">
-                        Ticket Number:
-                        <span class="relative overflow-hidden">
-                        <transition name="slide-y" mode="out-in">
-                            <span :key="currentCard.ticket.ticket_number" class="font-medium">
-                            {{ currentCard.ticket.ticket_number }}
-                            </span>
-                        </transition>
-                        </span>
-                    </p>
-
-                    <!-- Animate IT Staff span -->
-                    <p class="text-base text-gray-700">
-                        Attended by:
-                        <span class="relative overflow-hidden">
-                        <transition name="slide-y" mode="out-in">
-                            <span :key="currentCard.assigned_user.name" class="font-medium">
-                            {{ currentCard.assigned_user.name }}
-                            </span>
-                        </transition>
-                        </span>
-                    </p>
-                </div>
-
-                <!-- Dots navigation -->
-                <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                    <button
-                        v-for="(item, i) in inProgressList"
-                        :key="item.ticket_id"
-                        @click="setIndex(i)"
-                        class="w-2 h-2 rounded-full"
-                        :class="i === currentIndex ? 'bg-[#003D5B]' : 'bg-gray-300'"
-                        aria-label="'Go to slide ' + (i + 1)"
-                    ></button>
-                </div>
-            </div>
-
-            <!-- Total ticket in Queue today -->
-            <div class="w-[50%] h-full bg-white rounded-3xl flex flex-col text-center justify center p-5">
-                <h3 class="text-2xl font-bold text-[#003D5B] text-left mt-2">Successfully Resolved Tickets</h3>
-                <h1 class="text-[100px] font-bold text-[#003D5B]">{{resolvedTickets}}</h1> <!-- Total tickets in Queue List -->
-            </div>
-        </div>
-
-        <!-- Waiting in Queue card -->
-        <div class="h-[calc(65%_-_2rem)] bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
-            <div class="w-full bg-white rounded-3xl flex justify-between pb-5">
-                <span class="text-lg font-semibold">Waiting in Queue: {{ waiting }}</span> <!-- Number of waiting in queue (inQueueToday - resolvedTickets) -->
-                <a href="/queue">View Public Queue Display</a>
-            </div>
-
-            <!-- Table for Queue List in Waiting -->
-            <div class="w-full">
-                <!-- Table Header -->
-                <div class="grid grid-cols-3 gap-4 bg-gray-200 p-3 rounded-t-2xl">
-                    <div class="font-semibold text-[#003D5B]">Order</div>
-                    <div class="font-semibold text-[#003D5B]">Ticket Number</div>
-                    <div class="font-semibold text-[#003D5B]">Issue</div>
-                </div>
-
-                <!-- Table Rows: data must be fetch from db -->
-                 <div class="h-full overflow-y-auto rounded-b-2xl">
-                    <div
-                        v-for="queue in queueList"
-                        :key="queue.id"
-                        class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer"
-                        @click="goToTicket(queue.ticket?.id)"
-                    >
-                        <div>{{ queue.queue_number }}</div>
-                        <div>{{ queue.ticket?.ticket_number}}</div>
-                        <div>{{ queue.ticket?.issue}}</div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </main>
-</template>
-
 <script setup>
-    import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+    import { ref, onMounted } from "vue";
+    import { Chart, PieController, ArcElement, Tooltip, Legend } from "chart.js";
 
-    import InProgress from '../cards/InProgress.vue';
+    Chart.register(PieController, ArcElement, Tooltip, Legend);
 
-    const resolvedTickets = ref(0);
-    const waiting = ref(0); // Example value for waiting in queue
+    /* =======================
+    REACTIVE STATE
+    ======================= */
+    const waiting = ref(0);               // Waiting count
+    const queueList = ref([]);            // Queue list (right table)
+    const ticketList = ref([]);           // Ticket list (left table)
+    const loading = ref(true);
+    const ticketsPieChart = ref(null);
+    const ticketsResolvedByMePieChart = ref(null);
 
-    const queueList = ref([]); // Queue list for waiting table
-
-    // Simulated DB data
+    // FIX: These were used but never declared (runtime error)
+    const resolvedTickets = ref([]);
     const inProgressList = ref([]);
 
-    const currentIndex = ref(0);
-    const currentCard = computed(() => {
-        return inProgressList.value.length ? inProgressList.value[currentIndex.value] : { ticket_id: "none" };
-    });
-
-    let intervalId = null;
-    function setIndex(i) {
-        currentIndex.value = i;
-    }
-    function startIntervalIfNeeded() {
-        clearInterval(intervalId);
-        if (inProgressList.value.length > 1) {
-            intervalId = setInterval(() => {
-            currentIndex.value = (currentIndex.value + 1) % inProgressList.value.length;
-            }, 3000);
-        }
-    }
-
+    /* =======================
+    DATA FETCHING
+    ======================= */
     const fetchQueuedTickets = async () => {
         try {
-            const response = await axios.get('/tickets/queued');
+            const response = await axios.get("/tickets/queued");
             resolvedTickets.value = response.data.resolved_tickets;
             waiting.value = response.data.waiting;
 
             console.log("Resolved Total", resolvedTickets.value);
             console.log("Waiting", waiting.value);
 
-            const response2 = await axios.get('/queues/waiting');
+            const response2 = await axios.get("/queues/waiting");
             queueList.value = response2.data;
             console.log("Waiting Queue Items", queueList.value);
 
-            const response3 = await axios.get('/queues/list');
-            inProgressList.value = response3.data.filter(item => item.ticket.status === "in progress");
+            const response3 = await axios.get("/queues/list");
+            inProgressList.value = response3.data.filter(
+                item => item.ticket.status === "in progress"
+            );
             console.log("InProgress Items", inProgressList.value);
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
         }
     };
 
-    onMounted(() => {
-        fetchQueuedTickets();
-    });
+    const fetchTickets = async () => {
+        loading.value = true;
+        try {
+            const res = await axios.get("/tickets");
+            ticketList.value = res.data;
+            console.log("Fetched tickets items:", ticketList.value);
+        } catch (error) {
+            console.error("Error fetching tickets items:", error);
+        } finally {
+            loading.value = false;
+        }
+    };
 
+    const fetchforPieCharts = async () => {
+        try {
+            const response = await axios.get("/tickets/summary");
+            const data = response.data;
+
+            // Ticket distribution
+            const statusCounts = data.status_counts || {};
+            const labels = Object.keys(statusCounts);
+            const counts = Object.values(statusCounts);
+
+            if (ticketsPieChart.value) {
+                ticketsPieChart.value.data.labels = labels;
+                ticketsPieChart.value.data.datasets[0].data = counts;
+                ticketsPieChart.value.update();
+            }
+
+            // Resolved by me chart
+            const resolved = data.mine_vs_others || { mine: 0, others: 0 };
+            if (ticketsResolvedByMePieChart.value) {
+                ticketsResolvedByMePieChart.value.data.datasets[0].data = [
+                    resolved.mine,
+                    resolved.others,
+                ];
+                ticketsResolvedByMePieChart.value.update();
+            }
+
+        } catch (error) {
+            console.error("Failed to fetch tickets:", error);
+        }
+    };
+
+    /* =======================
+    NAVIGATION
+    ======================= */
     const goToTicket = (ticketId) => {
         if (!ticketId) return;
         window.location.href = `/dashboard/tickets?highlight=${ticketId}`;
     };
 
-    onMounted(startIntervalIfNeeded);
-    onUnmounted(() => clearInterval(intervalId));
-    watch(inProgressList, startIntervalIfNeeded, { immediate: true });
+    // Date format
+    const formatDate = (iso) => {
+        if (!iso) return "N/A";
+        return new Date(iso).toLocaleString();
+    };
+
+    /* =======================
+    LIFECYCLE
+    ======================= */
+    onMounted(() => {
+        fetchQueuedTickets();
+        fetchTickets();
+        fetchforPieCharts();
+
+        // PIE charts code (null-safe to prevent crashes)
+        const ctx = document
+            .getElementById("ticketsPieChart")
+            ?.getContext("2d");
+
+        const ctx2 = document
+            .getElementById("ticketsResolvedByMePieChart")
+            ?.getContext("2d");
+
+        if (ctx) {
+            ticketsPieChart.value = new Chart(ctx, {
+                type: "pie",
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: "Tickets",
+                            data: [],
+                            backgroundColor: [
+                                "#F87171", // red
+                                "#FBBF24", // yellow
+                                "#3B82F6", // blue
+                                "#F97316", // orange
+                                "#10B981", // green
+                                "#8B5CF6", // purple
+                                "#06B6D4", // teal
+                            ],
+                            borderWidth: 1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "right",
+                        },
+                    },
+                },
+            });
+        }
+
+        if (ctx2) {
+            ticketsResolvedByMePieChart.value = new Chart(ctx2, {
+                type: "pie",
+                data: {
+                    labels: ["Mine", "Others"],
+                    datasets: [
+                        {
+                            label: "Resolved Tickets",
+                            data: [],
+                            backgroundColor: [
+                                "#10B981", // green
+                                "#06B6D4", // teal
+                            ],
+                            borderWidth: 1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "right",
+                        },
+                    },
+                },
+            });
+        }
+    });
 </script>
 
-<style scoped>
-/* Slide horizontally for queue number */
-.slide-x-enter-active,
-.slide-x-leave-active {
-  transition: all 0.4s ease;
-}
-.slide-x-enter-from {
-  transform: translateX(100%);
-  opacity: 0;
-}
-.slide-x-enter-to {
-  transform: translateX(0);
-  opacity: 1;
-}
-.slide-x-leave-from {
-  transform: translateX(0);
-  opacity: 1;
-}
-.slide-x-leave-to {
-  transform: translateX(-100%);
-  opacity: 0;
-}
+<template>
+    <main class="flex w-full h-full px-10 py-5 box-border space-x-5">
+        <!-- Left -->
+        <div class="w-[70%] flex flex-col space-y-5 rounded-3xl">
+            <!-- left-top -->
+            <div class="flex gap-3">
+                <!-- Left Side: Pie Chart -->
+                <div class="w-1/2 bg-white rounded-xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2">Ticket Distribution</h2>
+                    <div class="w-[90%] h-[90%] mx-auto">
+                        <canvas id="ticketsPieChart"></canvas>
+                    </div>
+                </div>
 
-/* Slide vertically for spans */
-.slide-y-enter-active,
-.slide-y-leave-active {
-  transition: all 0.3s ease;
-}
-.slide-y-enter-from {
-  transform: translateY(100%);
-  opacity: 0;
-}
-.slide-y-enter-to {
-  transform: translateY(0);
-  opacity: 1;
-}
-.slide-y-leave-from {
-  transform: translateY(0);
-  opacity: 1;
-}
-.slide-y-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-</style>
+                <!-- Right Side: Pie Chart -->
+                <div class="w-1/2 bg-white rounded-xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2">Tickets Resolved by Me</h2>
+                    <div class="w-[80%] h-[80%] mx-auto">
+                        <canvas id="ticketsResolvedByMePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- left-bottom -->
+            <div class="h-full bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
+                <div class="w-full bg-white rounded-3xl flex justify-between pb-5 text-lg">
+                    <h1 class="font-semibold">Tickets Quick View</h1>
+                    <a href="/dashboard/tickets">View List</a>
+                </div>
+
+                <!-- Table for Ticket List -->
+                <div class="w-full max-h-[350px] flex flex-col">
+                    <!-- Table Header -->
+                    <div class="grid grid-cols-3 gap-2 bg-gray-200 p-3 rounded-t-2xl flex-none">
+                        <div class="font-semibold text-[#003D5B]">Ticket Number</div>
+                        <div class="font-semibold text-[#003D5B]">Status</div>
+                        <div class="font-semibold text-[#003D5B]">Last Modified</div>
+                    </div>
+
+                    <!-- Table Rows -->
+                    <div class="overflow-y-auto flex-1 rounded-b-2xl">
+                        <div
+                            v-for="ticket in ticketList"
+                            :key="ticket.id"
+                            class="grid grid-cols-3 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer"
+                            @click="goToTicket(ticket?.id)"
+                        >
+                            <div>{{ ticket?.ticket_number }}</div>
+                            <div>{{ ticket?.status }}</div>
+                            <div>{{ formatDate(ticket?.updated_at) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right -->
+        <div class="w-[30%] h-full bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
+            <div class="w-full bg-white rounded-3xl flex justify-between pb-5 text-lg">
+                <h1 class="font-semibold">Queue Quick View</h1>
+                <span>{{ waiting ? waiting : 0 }} waiting</span>
+                <a href="/dashboard/queue-list">View List</a>
+            </div>
+
+            <!-- Table for Queue List -->
+            <div class="w-full max-h-[350px] flex flex-col">
+                <!-- Table Header (FIXED column count) -->
+                <div class="grid grid-cols-2 gap-2 bg-gray-200 p-3 rounded-t-2xl flex-none">
+                    <div class="font-semibold text-[#003D5B]">Queue Number</div>
+                    <div class="font-semibold text-[#003D5B]">Ticket Number</div>
+                </div>
+
+                <!-- Table Rows -->
+                <div class="overflow-y-auto flex-1 rounded-b-2xl">
+                    <div
+                        v-for="queue in queueList"
+                        :key="queue.id"
+                        class="grid grid-cols-2 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer"
+                        @click="goToTicket(queue.ticket?.id)"
+                    >
+                        <div>{{ queue.queue_number }}</div>
+                        <div>{{ queue.ticket?.ticket_number }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</template>

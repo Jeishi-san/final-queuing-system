@@ -17,14 +17,14 @@
                     ">
         <a
           href="/login"
-          class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+          class="w-[85%] px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
         >
           Login
         </a>
 
         <a
           href="/queue"
-          class="px-6 py-3 border border-white text-white hover:bg-blue-50 hover:text-blue-600 font-semibold rounded-lg transition"
+          class="hidden px-6 py-3 border border-white text-white hover:bg-blue-50 hover:text-blue-600 font-semibold rounded-lg transition"
         >
           View Queue Display
         </a>

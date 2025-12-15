@@ -9,7 +9,7 @@ use App\Http\Controllers\TicketLogController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QueueController;
-use App\Http\Controllers\Auth\RegisterController; 
+use App\Http\Controllers\Auth\RegisterController;
 
 // -------------------- PUBLIC ROUTES -------------------- //
 Route::get('/', function () {
@@ -65,16 +65,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // -------------------- API CONTROLLERS -------------------- //
 Route::middleware(['auth'])->group(function () {
-    
+
     // API Routes that grant full access (IT Staff, Admin, Super Admin)
     Route::get('/user/activity-logs', [UserController::class, 'getCurrentUserActivityLogs']);
     Route::get('/agent/submitted-tickets', [TicketController::class, 'getMySubmittedTickets']);
-    
+
     // User Routes
     Route::prefix('users')->group(function () {
-        // These routes should ideally be protected by a role middleware, but kept outside 
+        // These routes should ideally be protected by a role middleware, but kept outside
         // the role group for now based on your previous structure.
-        Route::get('/', [UserController::class, 'getUsers']); 
+        Route::get('/', [UserController::class, 'getUsers']);
         Route::post('/', [UserController::class, 'store']);
         Route::get('{user}', [UserController::class, 'show']);
         Route::put('{user}', [UserController::class, 'update']);
@@ -96,7 +96,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('{queue}', [QueueController::class, 'show']);
         Route::put('{queue}', [QueueController::class, 'update']);
         Route::delete('{queue}', [QueueController::class, 'destroy']);
-        Route::delete('/by-ticket/{ticket_id}', [QueueController::class, 'deleteByTicket']); 
+        Route::delete('/by-ticket/{ticket_id}', [QueueController::class, 'deleteByTicket']);
         Route::get('next-ticket', [QueueController::class, 'nextTicket']);
     });
 
@@ -104,6 +104,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('tickets')->group(function () {
         Route::get('/', [TicketController::class, 'index']);
         Route::get('/queued', [TicketController::class, 'countQueuedTickets']);
+        Route::get('/summary', [TicketController::class, 'summary']);
 
         Route::post('/', [TicketController::class, 'store']);
         Route::get('{ticket}', [TicketController::class, 'show']);
@@ -124,7 +125,7 @@ require __DIR__ . '/auth.php';
 
 // Fixes "GET method not supported": Defines how to show the page
 Route::get('/register', function () {
-    return view('vue.auth.register'); 
+    return view('vue.auth.register');
 })->middleware('guest')->name('register');
 
 // Fixes "Employee ID required": Points to YOUR custom controller

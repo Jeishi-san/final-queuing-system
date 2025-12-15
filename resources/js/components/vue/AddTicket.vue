@@ -16,7 +16,7 @@
 
     const handleSubmit = async () => {
         if (!form.value.ticket_number) return;
-        
+
         console.log("Ticket adding...", form.value);
         loading.value = true;
 
@@ -28,7 +28,7 @@
             form.value.ticket_number = "";
 
             setTimeout(() => {
-                emit('submitted'); 
+                emit('submitted');
             }, 500);
 
         } catch (error) {
@@ -37,9 +37,9 @@
             } else {
                 console.error("Error:", error);
             }
-            
+
             setTimeout(() => {
-                emit('failed'); 
+                emit('failed');
             }, 500);
         } finally {
             loading.value = false;
@@ -49,13 +49,13 @@
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto">
-        
-        <div class="bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] 
-                    w-full max-w-md p-8 relative flex flex-col items-center 
+
+        <div class="bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]
+                    w-full max-w-md p-8 relative flex flex-col items-center
                     transform transition-all">
 
-            <button 
-                @click="$parent.showAddTicket = false" 
+            <button
+                @click="$parent.showAddTicket = false"
                 class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2"
             >
                 <FontAwesomeIcon :icon="['fas', 'times']" class="text-xl" />
@@ -66,7 +66,7 @@
             </h3>
 
             <form @submit.prevent="handleSubmit" class="w-full space-y-6">
-                
+
                 <div class="hidden">
                     <input type="text" id="name" v-model="form.holder_name" placeholder="Name" />
                 </div>
@@ -83,7 +83,7 @@
                         type="text"
                         id="ticket_id"
                         v-model="form.ticket_number"
-                        placeholder="e.g. T-1024"
+                        placeholder="e.g. INC000000000001"
                         required
                         autofocus
                         class="w-full px-4 py-3

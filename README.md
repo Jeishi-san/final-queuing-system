@@ -26,4 +26,5 @@
 1. npm install
 2. npm install vue @vitejs/plugin-vue\
 3. npm install @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/vue-fontawesome @fortawesome/free-regular-svg-icons
-4. npm run dev
+4. npm install chart.js
+5. npm run dev
