@@ -72,8 +72,15 @@ Route::middleware(['auth'])->group(function () {
 
     // User Routes
     Route::prefix('users')->group(function () {
-        // These routes should ideally be protected by a role middleware, but kept outside
-        // the role group for now based on your previous structure.
+        
+        // ✅ NEW: Reporting / List Routes (Must be defined BEFORE {user} wildcard)
+        Route::get('/it-staff', [UserController::class, 'getITStaffList']);
+        Route::post('/it-staff/activity', [UserController::class, 'getITStaffActivityByEmail']);
+        
+        Route::get('/clients', [UserController::class, 'getClientList']);
+        Route::post('/clients/tickets', [UserController::class, 'getClientTicketsByEmail']);
+
+        // Standard CRUD
         Route::get('/', [UserController::class, 'getUsers']);
         Route::post('/', [UserController::class, 'store']);
         Route::get('{user}', [UserController::class, 'show']);

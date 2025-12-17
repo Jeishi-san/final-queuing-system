@@ -21,7 +21,7 @@ class SuperAdminSeeder extends Seeder
                 'email' => 'super.admin@cnx.test',
                 
                 // Use a strong, known password for the seeder
-                'password' => Hash::make('password'), 
+                'password' => Hash::make('password serve'), 
                 
                 // 🔑 CRITICAL: Set the role to super_admin
                 'role' => 'super_admin',

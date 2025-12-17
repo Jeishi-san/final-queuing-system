@@ -451,13 +451,6 @@ class UserController extends Controller
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
-            // Safe loading of relationships if needed
-            // if (method_exists($user, 'activityLogs')) {
-            //     $user->load(['activityLogs' => function($query) {
-            //         $query->latest()->limit(10);
-            //     }]);
-            // }
-
             return response()->json([
                 'user' => $user,
                 'profile' => [
@@ -490,41 +483,205 @@ class UserController extends Controller
     }
 
     // Get current user's activity logs
-// app/Http/Controllers/UserController.php
+    public function getCurrentUserActivityLogs(Request $request)
+    {
+        try {
+            $user = Auth::user();
 
-public function getCurrentUserActivityLogs(Request $request)
-{
-    try {
-        $user = Auth::user();
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
 
-        if (!$user) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            $perPage = $request->get('per_page', 15);
+
+            $activityLogs = ActivityLog::where('user_id', $user->id)
+                ->with('ticket') 
+                ->latest()
+                ->paginate($perPage);
+
+            return response()->json([
+                'activity_logs' => $activityLogs->items(),
+                'pagination' => [
+                    'current_page' => $activityLogs->currentPage(),
+                    'last_page' => $activityLogs->lastPage(),
+                    'per_page' => $activityLogs->perPage(),
+                    'total' => $activityLogs->total(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching current user activity logs: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch activity logs',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $perPage = $request->get('per_page', 15);
-
-        // ✅ FIX 1: Add .with('ticket') to load the related ticket details
-        $activityLogs = ActivityLog::where('user_id', $user->id)
-            ->with('ticket') 
-            ->latest()
-            ->paginate($perPage);
-
-        return response()->json([
-            'activity_logs' => $activityLogs->items(),
-            'pagination' => [
-                'current_page' => $activityLogs->currentPage(),
-                'last_page' => $activityLogs->lastPage(),
-                'per_page' => $activityLogs->perPage(),
-                'total' => $activityLogs->total(),
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error fetching current user activity logs: ' . $e->getMessage());
-        return response()->json([
-            'message' => 'Failed to fetch activity logs',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+
+    // ==========================================
+    // NEW FUNCTIONS ADDED BELOW
+    // ==========================================
+
+    // 1. Func to show IT staff list
+    public function getITStaffList(Request $request)
+    {
+        try {
+            // Fetch users with role 'it_staff'
+            // Select only the requested columns
+            $itStaff = User::where('role', 'it_staff')
+                ->select('id', 'name', 'email', 'employee_id as emp id', 'account_status')
+                ->get();
+
+            // Note: 'emp id' implies a key with a space. While valid JSON, 
+            // usually snake_case (emp_id) or camelCase (empId) is preferred.
+            // I will map it strictly to the prompt's request.
+            
+            $formattedStaff = $itStaff->map(function ($staff) {
+                return [
+                    'id' => $staff->id,
+                    'name' => $staff->name,
+                    'email' => $staff->email,
+                    'emp id' => $staff->employee_id, // Mapped from DB column
+                    'account status' => $staff->account_status
+                ];
+            });
+
+            return response()->json($formattedStaff);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching IT Staff list: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch IT Staff list',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // 2. Func to show activity log by IT staff
+    public function getITStaffActivityByEmail(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $email = $request->input('email');
+
+            // Find the IT Staff user
+            $user = User::where('email', $email)
+                ->where('role', 'it_staff')
+                ->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'IT Staff not found with this email'], 404);
+            }
+
+            // Get logs and map to required format
+            $logs = ActivityLog::where('user_id', $user->id)
+                ->latest()
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'date' => $log->created_at->toDateTimeString(), // Or format as preferred
+                        'action' => $log->action
+                    ];
+                });
+
+            return response()->json($logs);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching IT Staff activity: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch activity logs',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // 3. Func to show client/agent list
+    public function getClientList()
+    {
+        try {
+            // Fetch users with role 'agent' (assuming 'agent' represents client/agent)
+            $clients = User::where('role', 'agent')
+                ->select('id', 'name', 'email')
+                ->get();
+
+            return response()->json($clients);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching client list: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch client list',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // 4. Func to show ticket list by a client
+    public function getClientTicketsByEmail(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $email = $request->input('email');
+
+            // Find the Client/Agent user
+            $user = User::where('email', $email)
+                ->where('role', 'agent')
+                ->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'Client/Agent not found with this email'], 404);
+            }
+
+            // Fetch tickets associated with this user (assuming user_id is the foreign key for creator)
+            // Need to verify if 'queue' relationship exists in Ticket model to get queue number
+            $tickets = Ticket::where('user_id', $user->id)
+                ->with('queue') // Assuming there is a queue relationship
+                ->latest()
+                ->get()
+                ->map(function ($ticket) {
+                    
+                    // Logic for queue number:
+                    // If queue relation exists and has a number, return it.
+                    // Otherwise check status or return 'not queued'.
+                    
+                    $queueNumber = 'not queued';
+                    
+                    if ($ticket->queue && isset($ticket->queue->queue_number)) {
+                        $queueNumber = $ticket->queue->queue_number;
+                    } elseif (isset($ticket->queue_number)) {
+                        // Fallback if it's a direct column
+                        $queueNumber = $ticket->queue_number;
+                    }
+
+                    return [
+                        'ticket number' => $ticket->ticket_id ?? $ticket->id,
+                        'status' => $ticket->status,
+                        'Date Created' => $ticket->created_at->toDateTimeString(), // Format date
+                        'Queue Number' => $queueNumber
+                    ];
+                });
+
+            return response()->json($tickets);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching client tickets: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch client tickets',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

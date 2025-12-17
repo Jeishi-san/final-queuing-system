@@ -44,6 +44,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // -------------------- USER MANAGEMENT ROUTES -------------------- //
     Route::prefix('users')->group(function () {
+        
+        // ✅ NEW: Reporting / List Routes (Must be defined BEFORE {user} wildcard)
+        Route::get('/it-staff', [UserController::class, 'getITStaffList']);
+        Route::post('/it-staff/activity', [UserController::class, 'getITStaffActivityByEmail']);
+        
+        Route::get('/clients', [UserController::class, 'getClientList']);
+        Route::post('/clients/tickets', [UserController::class, 'getClientTicketsByEmail']);
+
+        // Standard CRUD Routes
         Route::get('/', [UserController::class, 'index']);                  
         Route::post('/', [UserController::class, 'store']);                 
         Route::get('{user}', [UserController::class, 'show']);              
