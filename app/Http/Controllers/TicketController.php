@@ -19,62 +19,62 @@ class TicketController extends Controller
     // List ticket items by filters
  // app/Http/Controllers/TicketController.php (index method)
 
-public function index(Request $request)
-{
-    $query = Ticket::query();
-    $user = Auth::user();
+    public function index(Request $request)
+    {
+        $query = Ticket::query();
+        $user = Auth::user();
 
-    // 🔑 SUPER ADMIN FEATURE: Bypasses role-based data filtering if logged in as super_admin.
-    if ($user && $user->role !== 'super_admin') {
-        // Apply your specific filtering for non-Super Admins (IT Staff, Agents) here.
-        // If your IT staff/Agents should ONLY see certain tickets, add that logic here.
+        // 🔑 SUPER ADMIN FEATURE: Bypasses role-based data filtering if logged in as super_admin.
+        if ($user && $user->role !== 'super_admin') {
+            // Apply your specific filtering for non-Super Admins (IT Staff, Agents) here.
+            // If your IT staff/Agents should ONLY see certain tickets, add that logic here.
 
-        // Example: Only show tickets not resolved/cancelled to non-Super Admins
-        // $query->whereNotIn('status', ['resolved', 'cancelled']);
+            // Example: Only show tickets not resolved/cancelled to non-Super Admins
+            // $query->whereNotIn('status', ['resolved', 'cancelled']);
+        }
+
+        // Filter by ticket_number
+        if ($request->ticket_number) {
+            $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
+        }
+
+        // Filter by holder_name
+        if ($request->holder_name) {
+            $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%');
+        }
+
+        // Filter by holder_email
+        if ($request->holder_email) {
+            $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%');
+        }
+
+        // Filter by issue
+        if ($request->issue) {
+            $query->where('issue', 'LIKE', '%'.$request->issue.'%');
+        }
+
+        // Filter by status
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by date range
+        if ($request->start_date) {
+            $query->whereDate('updated_at', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('updated_at', '<=', $request->end_date);
+        }
+
+        // Filter by next in line queued tickets
+        if ($request->nextQueued) {
+            $query->where('status', 'queued');
+            return $query->orderBy('created_at', 'asc')->take(5)->get();
+        }
+
+        // Default return
+        return $query->orderBy('created_at', 'asc')->orderBy('status')->get();
     }
-
-    // Filter by ticket_number
-    if ($request->ticket_number) {
-        $query->where('ticket_number', 'LIKE', '%'.$request->ticket_number.'%');
-    }
-
-    // Filter by holder_name
-    if ($request->holder_name) {
-        $query->where('holder_name', 'LIKE', '%'.$request->holder_name.'%');
-    }
-
-    // Filter by holder_email
-    if ($request->holder_email) {
-        $query->where('holder_email', 'LIKE', '%'.$request->holder_email.'%');
-    }
-
-    // Filter by issue
-    if ($request->issue) {
-        $query->where('issue', 'LIKE', '%'.$request->issue.'%');
-    }
-
-    // Filter by status
-    if ($request->status) {
-        $query->where('status', $request->status);
-    }
-
-    // Filter by date range
-    if ($request->start_date) {
-        $query->whereDate('updated_at', '>=', $request->start_date);
-    }
-    if ($request->end_date) {
-        $query->whereDate('updated_at', '<=', $request->end_date);
-    }
-
-    // Filter by next in line queued tickets
-    if ($request->nextQueued) {
-        $query->where('status', 'queued');
-        return $query->orderBy('created_at', 'asc')->take(5)->get();
-    }
-
-    // Default return
-    return $query->orderBy('created_at', 'asc')->orderBy('status')->get();
-}
 
     // Create a new ticket (Guest or User)
     public function store(Request $request)
@@ -311,6 +311,7 @@ public function index(Request $request)
         $saveTicket = Ticket::where('id', $ticket->id)->first();
         if ($saveTicket) {
             $saveTicket->assigned_to = auth('web')->id();
+            $saveTicket->save();
         }
     }
 
@@ -360,10 +361,12 @@ public function index(Request $request)
     /**
      * Return ticket summary for dashboard charts
      */
-    public function summary()
+    public function summary(Request $request)
     {
+        $userEmail = $request->query('clientEmail');
+
         // Count tickets by status
-        $statusCounts = Ticket::select('status')
+        $rawStatusCounts = Ticket::select('status')
             ->selectRaw('COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')   // key: status, value: count
@@ -380,28 +383,50 @@ public function index(Request $request)
             'dequeued'
         ];
 
+        $statusCounts = [];
         foreach ($allStatuses as $status) {
-            if (!isset($statusCounts[$status])) {
-                $statusCounts[$status] = 0;
+            $statusCounts[$status] = $rawStatusCounts[$status] ?? 0;
+        }
+
+        // Count tickets by current staff
+        $rawMineCounts = Ticket::where('assigned_to', Auth::id())
+            ->select('status')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')   // key: status, value: count
+            ->toArray();
+
+        $mineCounts = [];
+        foreach ($allStatuses as $status) {
+            $mineCounts[$status] = $rawMineCounts[$status] ?? 0;
+        }
+
+        // Count tickets by client email
+        $rawClientCounts = Ticket::where('holder_email', $userEmail)
+            ->select('status')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')   // key: status, value: count
+            ->toArray();
+
+        $clientCounts = [];
+        foreach ($allStatuses as $status) {
+            $clientCounts[$status] = $rawClientCounts[$status] ?? 0;
+        }
+
+        foreach ($allStatuses as $status) {
+            if (!isset($clientCounts[$status])) {
+                $clientCounts[$status] = 0;
             }
         }
 
-        // Count tickets resolved by current user vs others
-        $mineCount = Ticket::where('status', 'Resolved')
-            ->where('assigned_to', Auth::id()) // assuming you track who resolved
-            ->count();
-
-        $othersCount = Ticket::where('status', 'Resolved')
-            ->where('assigned_to', '!=', Auth::id())
-            ->count();
-
         return response()->json([
             'status_counts' => $statusCounts,
-            'mine_vs_others' => [
-                'mine' => $mineCount,
-                'others' => $othersCount,
-            ],
+            'mine_counts' => $mineCounts,
+            'client' => $clientCounts,
             'waiting' => Ticket::where('status', 'Queued')->count(), // optional for your waiting count
         ]);
     }
+
+
 }
