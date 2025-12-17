@@ -28,6 +28,35 @@
         status: "pending approval"
     });
 
+    const handleTicketSubmit = async () => {
+        if (!form.value.ticket_number) return;
+
+        console.log("Ticket adding...", form.value);
+        loading.value = true;
+
+        try {
+            form.value.holder_name = clients.value.find(c => c.email === form.value.holder_email)?.name || '';
+
+            const response = await axios.post('/tickets', form.value)
+            console.log("Ticket added successfully:", response.data);
+
+            // Clear input
+            form.value.ticket_number = "";
+            showAddTicket.value = false;
+            await fetchTickets();
+            await fetchTicketsByClient();
+            await fetchforPieCharts();
+        } catch (error) {
+            if (error.response) {
+                console.error("Adding failed:", error.response.data);
+            } else {
+                console.error("Error:", error);
+            }
+        } finally {
+            loading.value = false;
+        }
+    };
+
     //init
     searchEmail.value = 'john@concentrix.com';
     form.value.holder_email = searchEmail.value;
@@ -291,6 +320,11 @@
         fetchTicketsByClient();
         form.value.holder_email = searchEmail.value;
     });
+
+    watch(() => form.value.holder_email, (newEmail) => {
+        const user = users.find(u => u.email === newEmail);
+        form.value.holder_name = user ? user.name : '';
+    });
 </script>
 
 <template>
@@ -434,7 +468,7 @@
                                     shadow-[0_70px_200px_50px_rgba(0,0,0,0.3)]">
                             <div class="p-4 py-6 flex flex-col justify-center h-full relative">
                                 <form
-                                    @submit.prevent="handleTicketSumbit"
+                                    @submit.prevent="handleTicketSubmit"
                                     class="flex flex-col space-y-5"
                                 >
                                     <select
