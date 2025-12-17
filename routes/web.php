@@ -48,6 +48,10 @@ Route::middleware(['auth', 'verified', 'role:it_staff,admin,super_admin'])->grou
         return view('vue.admin.dashboard');
     })->name('tickets');
 
+    Route::get('/dashboard/users', function () {
+        return view('vue.admin.dashboard');
+    })->name('users');
+
     Route::get('/dashboard/notifications', function () {
         return view('vue.admin.dashboard');
     })->name('notifications.page');

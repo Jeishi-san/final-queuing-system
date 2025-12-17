@@ -420,11 +420,31 @@ class TicketController extends Controller
             }
         }
 
+        $allStaff = User::where('role', 'it_staff')
+            ->select('id', 'name', 'email')
+            ->get();
+
+        $rawStaffCounts = Ticket::whereNotNull('assigned_to')
+            ->select('assigned_to')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy('assigned_to')
+            ->pluck('count', 'assigned_to'); // key = staff_id
+
+        $staffCounts = $allStaff->map(function ($user) use ($rawStaffCounts) {
+            return [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'email' => $user->email,
+                'count' => $rawStaffCounts[$user->id] ?? 0, // ← zero if none
+            ];
+        });
+
         return response()->json([
             'status_counts' => $statusCounts,
             'mine_counts' => $mineCounts,
             'client' => $clientCounts,
-            'waiting' => Ticket::where('status', 'Queued')->count(), // optional for your waiting count
+            'staff' => $staffCounts,
+            'waiting' => Ticket::where('status', 'queued')->count(), // optional for your waiting count
         ]);
     }
 

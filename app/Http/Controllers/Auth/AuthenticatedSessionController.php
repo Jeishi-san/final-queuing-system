@@ -26,7 +26,7 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         // 1. Validation runs automatically because of 'LoginRequest' type hint above.
-        
+
         $request->authenticate();
 
         $request->session()->regenerate();
@@ -70,6 +70,14 @@ class AuthenticatedSessionController extends Controller
         ActivityLog::create([
             'user_id' => $userId,
             'action'  => $action,
+        ]);
+    }
+
+    public function checkSuperAdmin()
+    {
+        $user = Auth::user();
+        return response()->json([
+            'is_super_admin' => $user->role === 'super_admin'
         ]);
     }
 }

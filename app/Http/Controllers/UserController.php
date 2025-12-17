@@ -58,10 +58,10 @@ class UserController extends Controller
             'email' => 'required|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|string|max:50',
-            
+
             // ✅ UPDATED: Conditional validation for employee_id
             'employee_id' => 'required_if:role,it_staff|nullable|string|max:50|unique:users',
-            
+
             'department' => 'nullable|string|max:255',
             'contact_number' => 'nullable|string|max:20',
             'account_status' => 'nullable|in:active,inactive,on-leave',
@@ -79,7 +79,7 @@ class UserController extends Controller
                 'name', 'email', 'role',
                 'department', 'contact_number', 'account_status'
             ]);
-            
+
             // ✅ HANDLE NULL EMPLOYEE ID LOGIC
             // If role is agent, force employee_id to null. If IT staff, use the input.
             $userData['employee_id'] = ($request->role === 'it_staff') ? $request->employee_id : null;
@@ -148,10 +148,10 @@ class UserController extends Controller
             'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
             'password' => 'sometimes|string|min:8',
             'role' => 'sometimes|string|max:50',
-            
+
             // ✅ UPDATED: Conditional validation for employee_id on update
             'employee_id' => 'required_if:role,it_staff|nullable|string|max:50|unique:users,employee_id,' . $user->id,
-            
+
             'department' => 'nullable|string|max:255',
             'contact_number' => 'nullable|string|max:20',
             'account_status' => 'nullable|in:active,inactive,on-leave',
@@ -169,7 +169,7 @@ class UserController extends Controller
                 'name', 'email', 'role',
                 'department', 'contact_number', 'account_status'
             ]);
-            
+
             // ✅ HANDLE NULL EMPLOYEE ID LOGIC FOR UPDATE
             if ($request->has('role')) {
                 if ($request->role === 'agent') {
@@ -490,41 +490,42 @@ class UserController extends Controller
     }
 
     // Get current user's activity logs
-// app/Http/Controllers/UserController.php
+    // app/Http/Controllers/UserController.php
 
-public function getCurrentUserActivityLogs(Request $request)
-{
-    try {
-        $user = Auth::user();
+    public function getCurrentUserActivityLogs(Request $request)
+    {
+        try {
+            $user = Auth::user();
 
-        if (!$user) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            if (!$user) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            $perPage = $request->get('per_page', 15);
+
+            // ✅ FIX 1: Add .with('ticket') to load the related ticket details
+            $activityLogs = ActivityLog::where('user_id', $user->id)
+                ->with('ticket')
+                ->latest()
+                ->paginate($perPage);
+
+            return response()->json([
+                'activity_logs' => $activityLogs->items(),
+                'pagination' => [
+                    'current_page' => $activityLogs->currentPage(),
+                    'last_page' => $activityLogs->lastPage(),
+                    'per_page' => $activityLogs->perPage(),
+                    'total' => $activityLogs->total(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching current user activity logs: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to fetch activity logs',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $perPage = $request->get('per_page', 15);
-
-        // ✅ FIX 1: Add .with('ticket') to load the related ticket details
-        $activityLogs = ActivityLog::where('user_id', $user->id)
-            ->with('ticket') 
-            ->latest()
-            ->paginate($perPage);
-
-        return response()->json([
-            'activity_logs' => $activityLogs->items(),
-            'pagination' => [
-                'current_page' => $activityLogs->currentPage(),
-                'last_page' => $activityLogs->lastPage(),
-                'per_page' => $activityLogs->perPage(),
-                'total' => $activityLogs->total(),
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error fetching current user activity logs: ' . $e->getMessage());
-        return response()->json([
-            'message' => 'Failed to fetch activity logs',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+
 }

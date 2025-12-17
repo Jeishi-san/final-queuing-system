@@ -71,5 +71,5 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-} 
+}
 // ✅ The class ends HERE. Nothing should be below this line.
