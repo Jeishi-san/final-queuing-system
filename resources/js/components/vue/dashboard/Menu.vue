@@ -65,6 +65,10 @@
                     <span :class="iconClass">
                         <FontAwesomeIcon :icon="['fas', 'ticket']" />
                     </span>Tickets</a>
+                <a href="/dashboard/users" :class="navLinkClass">
+                    <span :class="iconClass">
+                        <FontAwesomeIcon :icon="['fas', 'user-group']" />
+                    </span>Users</a>
                 <!-- <a href="/queue" :class="navLinkClass">
                     <span :class="iconClass">
                         <FontAwesomeIcon :icon="['fas', 'desktop']" />

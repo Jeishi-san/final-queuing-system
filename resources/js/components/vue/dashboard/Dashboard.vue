@@ -5,6 +5,7 @@ import MainContent from './Main.vue';
 import Profile from './UserProfile.vue';
 import QueueList from './QueueList.vue';
 import Tickets from './Tickets.vue';
+import Users from './Users.vue';
 import EditProfile from './EditProfile.vue';
 import NotificationsPage from './NotificationPage.vue';
 
@@ -27,6 +28,7 @@ const components = {
     "/dashboard/edit-profile": EditProfile,
     "/dashboard/queue-list": QueueList,
     "/dashboard/tickets": Tickets,
+    "/dashboard/users": Users,
     "/dashboard/notifications": NotificationsPage, // <--- This is the key fix
 };
 
@@ -41,6 +43,7 @@ const pageName = {
     "/dashboard/queue-list": "Queue",
     "/dashboard/my-profile": "Profile",
     "/dashboard/edit-profile": "Edit Profile",
+    "/dashboard/users": "Users",
     "/dashboard/notifications": "Notifications"
 }[window.location.pathname] || "Dashboard";
 

@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, onMounted, watch } from "vue";
+    import { ref, onMounted, watch, nextTick } from "vue";
     import { Chart, PieController, ArcElement, Tooltip, Legend } from "chart.js";
 
     Chart.register(PieController, ArcElement, Tooltip, Legend);
@@ -15,10 +15,12 @@
     const ticketsPieChart = ref(null);
     const ticketsByMePieChart = ref(null);
     const ticketsByClientPieChart = ref(null);
+    const ticketsByStaffPieChart = ref(null);
     const searchEmail = ref('');
     const clients = ref([]);
     const clientTicketCount = ref(0);
     const showAddTicket = ref(false);
+    const isSuperAdmin = ref(false);
 
     const form = ref({
         holder_name: "",
@@ -120,15 +122,28 @@
                 ticketsPieChart.value.update();
             }
 
-            // Tickets by me chart
-            const mineCount = data.mine_counts || {};
-            const mineLabels = Object.keys(mineCount);
-            const mineCounts = Object.values(mineCount);
+            if(isSuperAdmin.value) {
+                // Tickets by staff chart
+                const staffArray = data.staff || [];
+                const staffLabels = staffArray.map(s => s.name);
+                const staffCounts = staffArray.map(s => s.count);
 
-            if (ticketsByMePieChart.value) {
-                ticketsByMePieChart.value.data.labels = mineLabels;
-                ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
-                ticketsByMePieChart.value.update();
+                if (ticketsByStaffPieChart.value) {
+                    ticketsByStaffPieChart.value.data.labels = staffLabels;
+                    ticketsByStaffPieChart.value.data.datasets[0].data = staffCounts;
+                    ticketsByStaffPieChart.value.update();
+                }
+            } else {
+                // Tickets by me chart
+                const mineCount = data.mine_counts || {};
+                const mineLabels = Object.keys(mineCount);
+                const mineCounts = Object.values(mineCount);
+
+                if (ticketsByMePieChart.value) {
+                    ticketsByMePieChart.value.data.labels = mineLabels;
+                    ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
+                    ticketsByMePieChart.value.update();
+                }
             }
 
             // Tickets by client chart
@@ -141,7 +156,6 @@
                 ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
                 ticketsByClientPieChart.value.update();
             }
-
 
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
@@ -175,6 +189,16 @@
         }
     };
 
+    const fetchUserRole = async () => {
+        try {
+            const response = await axios.get('/check-super-admin');
+            isSuperAdmin.value = response.data.is_super_admin;
+            console.log('Super admin status checked:', isSuperAdmin.value);
+        } catch (error) {
+            console.error('Error checking super admin status:', error);
+        }
+    };
+
     /* =======================
     NAVIGATION
     ======================= */
@@ -193,6 +217,7 @@
     LIFECYCLE
     ======================= */
     onMounted(() => {
+        fetchUserRole();
         fetchQueuedTickets();
         fetchTickets();
         fetchforPieCharts();
@@ -325,6 +350,44 @@
         const user = users.find(u => u.email === newEmail);
         form.value.holder_name = user ? user.name : '';
     });
+
+    watch(isSuperAdmin, async (val) => {
+        if (!val) return;
+
+        await nextTick(); // ensure canvas is in DOM
+
+        const ctx4 = document
+            .getElementById("ticketsByStaffPieChart")
+            ?.getContext("2d");
+
+        if (ctx4) {
+            ticketsByStaffPieChart.value = new Chart(ctx4, {
+                type: "pie",
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: "Tickets",
+                        data: [],
+                        backgroundColor: [
+                            "#F87171",
+                            "#FBBF24",
+                            "#3B82F6",
+                            "#10B981",
+                            "#8B5CF6",
+                            "#06B6D4",
+                        ],
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: "right" } },
+                },
+            });
+            fetchforPieCharts(); // now safe
+        }
+    });
+
 </script>
 
 <template>
@@ -340,11 +403,19 @@
                     </div>
                 </div>
 
-                <!-- Center: Pie Chart tickt resolved by me -->
-                <div class="w-1/3 bg-white rounded-3xl shadow p-5">
+                <!-- Center, Staff View: Pie Chart tickt resolved by me -->
+                <div v-if="!isSuperAdmin" class="w-1/3 bg-white rounded-3xl shadow p-5">
                     <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets Managed by Me</h2>
                     <div class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsByMePieChart" ></canvas>
+                    </div>
+                </div>
+
+                <!-- Center, Super Admin view: Pie Chart tickt resolved by me -->
+                <div v-if="isSuperAdmin" class="w-1/3 bg-white rounded-3xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets Managed by Staff</h2>
+                    <div class="w-[85%] h-[85%] mx-auto">
+                        <canvas id="ticketsByStaffPieChart" ></canvas>
                     </div>
                 </div>
 
@@ -507,7 +578,7 @@
                                 v-for="ticket in ticketListByClient"
                                 :key="ticket.id"
                                 class="grid grid-cols-2 gap-4 border-b p-3 hover:bg-gray-100 cursor-pointer"
-                                @click="goToTicket(ticket.ticket?.id)"
+                                @click="goToTicket(ticket?.id)"
                             >
                                 <div>{{ ticket?.ticket_number }}</div>
                                 <div>{{ ticket?.status }}</div>
