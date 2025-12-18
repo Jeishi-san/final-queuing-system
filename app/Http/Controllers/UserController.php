@@ -647,8 +647,11 @@ class UserController extends Controller
                 return response()->json(['message' => 'Client/Agent not found with this email'], 404);
             }
 
-            // Fetch tickets associated with this user
-            $tickets = Ticket::where('tickets.holder_email', $user->email)
+            // Fetch tickets associated with this user by either holder_email or assigned_to
+            $tickets = Ticket::where(function($q) use ($user) {
+                    $q->where('tickets.holder_email', $user->email)
+                      ->orWhere('tickets.assigned_to', $user->id);
+                })
                 ->leftJoin('queues', 'queues.ticket_id', '=', 'tickets.id')
                 ->select(
                     'tickets.id',

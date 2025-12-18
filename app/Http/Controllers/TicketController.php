@@ -262,7 +262,7 @@ class TicketController extends Controller
         try {
             $recipients = User::all();
             if ($recipients->count() > 0) {
-                // Notification::send($recipients, new TicketUpdatedNotification($ticket, $changes, $updater));
+                Notification::send($recipients, new TicketUpdatedNotification($ticket, $changes, $updater));
                 Log::info('Notification sent to ' . $recipients->count() . ' users.');
             }
         } catch (\Exception $e) {
@@ -277,7 +277,7 @@ class TicketController extends Controller
         if ($ticket->assigned_to) {
             $assignee = User::find($ticket->assigned_to);
             if ($assignee && (!$updater || $assignee->id !== $updater->id)) {
-                // $assignee->notify(new TicketUpdatedNotification($ticket, $changes, $updater));
+                $assignee->notify(new TicketUpdatedNotification($ticket, $changes, $updater));
             }
         }
     }
