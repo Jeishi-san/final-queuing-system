@@ -1,6 +1,7 @@
 <script setup>
     import { ref, onMounted, watch, nextTick } from "vue";
     import { Chart, PieController, ArcElement, Tooltip, Legend } from "chart.js";
+    import TicketsByPeriod from './TicketsByPeriod.vue';
 
     Chart.register(PieController, ArcElement, Tooltip, Legend);
 
@@ -23,6 +24,9 @@
     const showAddTicket = ref(false);
     const isSuperAdmin = ref(false);
     const isListSwitched = ref(false);
+
+    const periodType = ref("daily");
+    const ticketsByPeriodTable = ref([]);
 
     const form = ref({
         holder_name: "",
@@ -493,15 +497,15 @@
                 </div>
 
                 <!-- Right Side: Pie Chart ticket dist by client-->
-                <div class="w-1/3 bg-white rounded-3xl shadow p-5">
-                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by {{ isSuperAdmin ? 'Period' : 'Client' }}</h2>
-                    <div v-if="isSuperAdmin" class="w-[85%] h-[85%] mx-auto">
-                        <canvas id="ticketsByPeriodChart"></canvas>
-                    </div>
-                    <div v-if="!isSuperAdmin" class="w-[85%] h-[85%] mx-auto">
+                <div v-if="!isSuperAdmin" class="w-1/3 bg-white rounded-3xl shadow p-5">
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by Client</h2>
+                    <div class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsByClientPieChart"></canvas>
                     </div>
                 </div>
+
+                <!-- Right Side, Super Admin View: ticket by period-->
+                <TicketsByPeriod v-if="isSuperAdmin"/>
             </div>
 
             <!-- bottom | if super admin-->
