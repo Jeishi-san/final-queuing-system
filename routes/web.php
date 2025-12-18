@@ -76,13 +76,13 @@ Route::middleware(['auth'])->group(function () {
 
     // User Routes
     Route::prefix('users')->group(function () {
-        
+
         // ✅ NEW: Reporting / List Routes (Must be defined BEFORE {user} wildcard)
         Route::get('/it-staff', [UserController::class, 'getITStaffList']);
-        Route::post('/it-staff/activity', [UserController::class, 'getITStaffActivityByEmail']);
-        
+        Route::get('/it-staff/activity', [UserController::class, 'getITStaffActivityByEmail']);
+
         Route::get('/clients', [UserController::class, 'getClientList']);
-        Route::post('/clients/tickets', [UserController::class, 'getClientTicketsByEmail']);
+        Route::get('/clients/tickets', [UserController::class, 'getClientTicketsByEmail']);
 
         // Standard CRUD
         Route::get('/', [UserController::class, 'getUsers']);
