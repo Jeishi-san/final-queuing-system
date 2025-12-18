@@ -1,6 +1,6 @@
 import './bootstrap';
 import '../css/app.css';
-import { createApp } from 'vue';
+import { createApp, onMounted } from 'vue';
 import HomeView from './components/vue/HomeView.vue';
 import QueueView from './components/vue/QueueView.vue';
 
@@ -77,10 +77,10 @@ if (document.querySelector('#register-app')) {
 // DashboardView
 if (document.querySelector('#dashboard-app')) {
     const app = createApp(DashboardView);
+    await window.checkSuperAdmin();//Check super admin
     app.component('FontAwesomeIcon', FontAwesomeIcon);
     app.mount('#dashboard-app');
 }
-
 
 
 

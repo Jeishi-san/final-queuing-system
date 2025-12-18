@@ -16,11 +16,13 @@
     const ticketsByMePieChart = ref(null);
     const ticketsByClientPieChart = ref(null);
     const ticketsByStaffPieChart = ref(null);
+    const ticketsByClientPieChart_admin = ref(null);
     const searchEmail = ref('');
     const clients = ref([]);
     const clientTicketCount = ref(0);
     const showAddTicket = ref(false);
     const isSuperAdmin = ref(false);
+    const isListSwitched = ref(false);
 
     const form = ref({
         holder_name: "",
@@ -74,20 +76,23 @@
         try {
             const response = await axios.get("/tickets/queued");
             resolvedTickets.value = response.data.resolved_tickets;
-            waiting.value = response.data.waiting;
 
             console.log("Resolved Total", resolvedTickets.value);
-            console.log("Waiting", waiting.value);
 
             const response2 = await axios.get("/queues/waiting");
             queueList.value = response2.data;
-            console.log("Waiting Queue Items", queueList.value);
 
             const response3 = await axios.get("/queues/list");
             inProgressList.value = response3.data.filter(
                 item => item.ticket.status === "in progress"
             );
-            console.log("InProgress Items", inProgressList.value);
+
+            waiting.value = response3.data.length;
+            if(isSuperAdmin) {
+                const response = await axios.get("/queues/list");
+                queueList.value = response.data;
+            }
+
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
         }
@@ -133,6 +138,26 @@
                     ticketsByStaffPieChart.value.data.datasets[0].data = staffCounts;
                     ticketsByStaffPieChart.value.update();
                 }
+
+                // Tickets by client chart, Super Admin View
+                const clientCount = data.client || {};
+                const clientLabels = Object.keys(clientCount);
+                let clientCounts = Object.values(clientCount);
+
+                // Check if all values are 0 or array is empty
+                const hasData = clientCounts.some(v => v > 0);
+                if (!hasData) {
+                    clientLabels.length = 0;
+                    clientCounts = [1];
+                    clientLabels.push("No Tickets");
+                }
+
+                if (ticketsByClientPieChart_admin.value) {
+                    ticketsByClientPieChart_admin.value.data.labels = clientLabels;
+                    ticketsByClientPieChart_admin.value.data.datasets[0].data = clientCounts;
+                    ticketsByClientPieChart_admin.value.update();
+                }
+
             } else {
                 // Tickets by me chart
                 const mineCount = data.mine_counts || {};
@@ -144,18 +169,28 @@
                     ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
                     ticketsByMePieChart.value.update();
                 }
+
+                // Tickets by client chart
+                const clientCount = data.client || {};
+                const clientLabels = Object.keys(clientCount);
+                let clientCounts = Object.values(clientCount);
+
+                // Check if all values are 0 or array is empty
+                const hasData = clientCounts.some(v => v > 0);
+                if (!hasData) {
+                    clientLabels.length = 0;
+                    clientCounts = [1];
+                    clientLabels.push("No Tickets");
+                }
+
+                if (ticketsByClientPieChart.value) {
+                    ticketsByClientPieChart.value.data.labels = clientLabels;
+                    ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
+                    ticketsByClientPieChart.value.update();
+                }
             }
 
-            // Tickets by client chart
-            const clientCount = data.client || {};
-            const clientLabels = Object.keys(clientCount);
-            const clientCounts = Object.values(clientCount);
 
-            if (ticketsByClientPieChart.value) {
-                ticketsByClientPieChart.value.data.labels = clientLabels;
-                ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
-                ticketsByClientPieChart.value.update();
-            }
 
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
@@ -346,10 +381,10 @@
         form.value.holder_email = searchEmail.value;
     });
 
-    watch(() => form.value.holder_email, (newEmail) => {
-        const user = users.find(u => u.email === newEmail);
-        form.value.holder_name = user ? user.name : '';
-    });
+    // watch(() => form.value.holder_email, (newEmail) => {
+    //     const user = users.find(u => u.email === newEmail);
+    //     form.value.holder_name = user ? user.name : '';
+    // });
 
     watch(isSuperAdmin, async (val) => {
         if (!val) return;
@@ -386,6 +421,44 @@
             });
             fetchforPieCharts(); // now safe
         }
+
+        const ctx5 = document
+            .getElementById("ticketsByClientPieChart_admin")
+            ?.getContext("2d");
+
+        if (ctx5) {
+            ticketsByClientPieChart_admin.value = new Chart(ctx5, {
+                type: "pie",
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: "Tickets",
+                            data: [],
+                            backgroundColor: [
+                                "#F87171", // red
+                                "#FBBF24", // yellow
+                                "#FBBF24", // yellow
+                                "#FBBF24", // yellow
+                                "#10B981", // green
+                                "#8B5CF6", // purple
+                                "#06B6D4", // teal
+                            ],
+                            borderWidth: 1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "right",
+                        },
+                    },
+                },
+            });
+        }
     });
 
 </script>
@@ -421,15 +494,261 @@
 
                 <!-- Right Side: Pie Chart ticket dist by client-->
                 <div class="w-1/3 bg-white rounded-3xl shadow p-5">
-                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by Client</h2>
-                    <div class="w-[85%] h-[85%] mx-auto">
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by {{ isSuperAdmin ? 'Period' : 'Client' }}</h2>
+                    <div v-if="isSuperAdmin" class="w-[85%] h-[85%] mx-auto">
+                        <canvas id="ticketsByPeriodChart"></canvas>
+                    </div>
+                    <div v-if="!isSuperAdmin" class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsByClientPieChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- bottom -->
-            <div class="h-full rounded-3xl flex space-x-5 text-[#003D5B]">
+            <!-- bottom | if super admin-->
+            <div v-if="isSuperAdmin" class="flex h-[55svh] space-x-5 text-[#003D5B]">
+                <div class="w-1/2 flex flex-col bg-white rounded-3xl p-5 text-[#003D5B]">
+                    <div class="flex pb-5 text-lg relative">
+                        <h1 class="font-semibold">{{ isListSwitched ? 'Queue' : 'Tickets' }} Quick View</h1>
+                        <a :href="isListSwitched ? '/dashboard/queue-list' : '/dashboard/tickets'" :title="[isListSwitched ? 'Go to Queue List' : 'Go to Ticket List']">
+                            <span class="">
+                                <FontAwesomeIcon :icon="['fas', 'caret-right']" />
+                            </span>
+                        </a>
+                        <button
+                            class="absolute right-0 text-[#003D5B]
+                                hover:text-[#4accff] transition text-sm"
+                            @click="isListSwitched = !isListSwitched"
+                        >
+                            Switch to {{ isListSwitched ? 'Ticket' : 'Queue' }} List View
+                        </button>
+                    </div>
+
+                    <!-- Table for Ticket List -->
+                    <div class="rounded-t-lg overflow-hidden">
+                        <table class="w-full text-sm">
+                            <colgroup>
+                                <col class="w-1/3" />
+                                <col class="w-1/3" />
+                                <col class="w-1/3" />
+                            </colgroup>
+                            <thead class="bg-gray-200 sticky top-0 font-semibold text-[#003D5B]">
+                                <tr v-if="!isListSwitched"> <!-- Ticket List View -->
+                                    <th class="py-2 px-3 text-left">Ticket Number</th>
+                                    <th class="py-2 px-3 text-left">Status</th>
+                                    <th class="py-2 px-3 text-left">Last Modified</th>
+                                </tr>
+
+                                <tr v-if="isListSwitched"> <!-- Queue List View -->
+                                    <th class="py-2 px-3 text-left">Queue Number</th>
+                                    <th class="py-2 px-3 text-left">Ticket Number</th>
+                                    <th class="py-2 px-3 text-left">Status</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+
+                    <div
+                        class="flex-1 overflow-y-auto
+                            scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
+                    >
+                        <table class="w-full text-sm">
+                            <colgroup>
+                                <col class="w-1/3" />
+                                <col class="w-1/3" />
+                                <col class="w-1/3" />
+                            </colgroup>
+                            <tbody v-if="!isListSwitched"> <!-- Ticket List View -->
+                                <tr
+                                    v-for="ticket in ticketList"
+                                    :key="ticket.id"
+                                    class="border-b hover:bg-gray-200 transition"
+                                    @click="goToTicket(ticket.id)"
+                                >
+                                    <td class="py-2 px-3">{{ ticket.ticket_number }}</td>
+                                    <td class="py-2 px-3">{{ ticket.status }}</td>
+                                    <td class="py-2 px-3">{{ formatDate(ticket?.updated_at) }}</td>
+                                </tr>
+
+                                <tr v-if="!ticketList || ticketList.length === 0">
+                                    <td colspan="3" class="text-center py-4 text-gray-400">
+                                        Empty ticket list.
+                                    </td>
+                                </tr>
+                            </tbody>
+
+                            <tbody v-if="isListSwitched"> <!-- Queue List View -->
+                                <tr
+                                    v-for="queue in queueList"
+                                    :key="queue.id"
+                                    class="border-b hover:bg-gray-200 transition"
+                                    @click="goToTicket(queue.ticket?.id)"
+                                >
+                                    <td class="py-2 px-3">{{ queue.queue_number }}</td>
+                                    <td class="py-2 px-3">{{ queue.ticket?.ticket_number }}</td>
+                                    <td class="py-2 px-3">{{ queue.ticket?.status }}</td>
+                                </tr>
+
+                                <tr v-if="!ticketList || ticketList.length === 0">
+                                    <td colspan="3" class="text-center py-4 text-gray-400">
+                                        Empty ticket list.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <div class="w-1/2 flex flex-col space-y-5">
+                    <div class="w-full h-[46%] bg-white rounded-3xl flex flex-col p-5 text-[#003D5B]">
+                        <div class="w-full bg-white rounded-3xl flex pb-5 text-lg relative">
+                            <!-- Left: Title -->
+                            <h1 class="flex justify-start font-semibold">
+                                Client Tickets<span class="ml-2 text-sm font-light" title="Total Tickets">{{ clientTicketCount ? clientTicketCount : 0 }}</span>
+                            </h1>
+
+                            <!-- Right: Search -->
+                            <div class="absolute right-0 -top-[1px] w-80">
+                                <select
+                                    v-model="searchEmail"
+                                    class="w-full rounded-xl border border-gray-300 px-4 py-1 text-sm
+                                            focus:outline-none focus:ring-1 focus:ring-[#003D5B]"
+                                    >
+                                    <option value="" disabled>Select Client Email</option>
+                                    <option
+                                        v-for="client in clients"
+                                        :key="client.id"
+                                        :value="client.email"
+                                    >{{ client.email }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="w-full h-[75%] flex flex-col relative">
+                            <div class="rounded-t-lg overflow-hidden">
+                                <table class="w-full text-sm">
+                                    <colgroup>
+                                        <col class="w-1/2" />
+                                        <col class="w-1/2" />
+                                    </colgroup>
+                                    <thead class="bg-gray-200 sticky top-0 font-semibold text-[#003D5B]">
+                                        <tr > <!-- Ticket List View -->
+                                            <th v-if="!showAddTicket" class="py-2 px-3 text-left">Ticket Number</th>
+                                            <th v-if="!showAddTicket" class="py-2 px-3 text-left">Status</th>
+                                            <th v-if="showAddTicket" class="py-2 px-3 text-left">Add Ticket</th>
+                                            <th class="relative">
+                                                <button
+                                                    @click="showAddTicket = !showAddTicket"
+                                                    class="absolute right-5 top-1/2 -translate-y-1/2 group rounded-lg transition
+                                                    hover:text-[#029cda]"
+                                                    title="Add Ticket"
+                                                >
+                                                    <FontAwesomeIcon
+                                                        :icon="['fas', 'plus']"
+                                                        class="w-3 h-3 transition"
+                                                    />
+                                                </button>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+
+                            <div v-if="!showAddTicket"
+                                class="flex-1 overflow-y-scroll
+                                    scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100"
+                            >
+                                <table class="w-full text-sm">
+                                    <colgroup>
+                                        <col class="w-1/2" />
+                                        <col class="w-1/2" />
+                                    </colgroup>
+                                    <tbody> <!-- Ticket List View -->
+                                        <tr
+                                            v-for="ticket in ticketListByClient"
+                                            :key="ticket.id"
+                                            class="border-b hover:bg-gray-200 transition"
+                                            @click="goToTicket(ticket.id)"
+                                        >
+                                            <td class="py-2 px-3">{{ ticket.ticket_number }}</td>
+                                            <td class="py-2 px-3">{{ ticket.status }}</td>
+                                        </tr>
+
+                                        <tr v-if="!ticketListByClient || ticketListByClient.length === 0">
+                                            <td colspan="3" class="text-center py-4 text-gray-400">
+                                                Empty ticket list.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Add Ticket Form -->
+                            <div v-if="showAddTicket"
+                                class="flex-1 overflow-hidden mt-4"
+                            >
+                                <table class="w-full text-sm">
+                                    <colgroup>
+                                        <col class="w-full" />
+                                    </colgroup>
+                                    <tbody>
+                                        <tr>
+                                            <td class="py-2 px-3">
+                                                <form
+                                                    @submit.prevent="handleTicketSubmit"
+                                                    class="flex flex-col space-y-5"
+                                                >
+                                                    <div class="flex space-x-5">
+                                                        <select
+                                                            v-model="form.holder_email"
+                                                            class="w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#003D5B]"
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Select Email</option>
+                                                            <option
+                                                                v-for="client in clients"
+                                                                :key="client.id"
+                                                                :value="client.email"
+                                                            >{{ client.email }}</option>
+                                                        </select>
+                                                        <input
+                                                            type="text"
+                                                            v-model="form.ticket_number"
+                                                            placeholder="Ticket Number e.g. INC000000000001"
+                                                            class="w-1/2 text-sm px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#003D5B]"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="submit"
+                                                        class="bg-[#003D5B] text-white px-4 py-2 rounded-lg hover:bg-[#002a3a] transition"
+                                                    >
+                                                        Submit Ticket
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pie Chart ticket dist by client, Admin view-->
+                    <div class="w-full h-[50%] bg-white rounded-3xl shadow p-5">
+                        <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by Client
+                            <span class="text-sm font-light ml-5">{{ searchEmail }}</span></h2>
+                        <div class="w-[85%] h-[85%] mx-auto">
+                            <canvas id="ticketsByClientPieChart_admin"></canvas>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- bottom | if staff -->
+            <div v-if="!isSuperAdmin" class="h-full rounded-3xl flex space-x-5 text-[#003D5B]">
                 <div class="w-1/2 bg-white h-full rounded-3xl flex flex-col p-5 text-[#003D5B]">
                     <div class="w-full bg-white rounded-3xl flex justify-between pb-5 text-lg">
                         <h1 class="font-semibold">Tickets Quick View</h1>
@@ -528,7 +847,7 @@
                             >
                                 <FontAwesomeIcon
                                     :icon="['fas', 'plus']"
-                                    class="w-4 h-4 transition'"
+                                    :class="[ showAddTicket ? '-rotate-45' : '', 'w-4 h-4 transition']"
                                 />
                             </button>
                         </div>

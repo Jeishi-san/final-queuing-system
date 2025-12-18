@@ -5,6 +5,8 @@
     const isSidebarOpen = ref(true);
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    const isSuperAdmin = ref(false);
+
     function toggleSidebar() {
         isSidebarOpen.value = !isSidebarOpen.value;
     }
@@ -17,6 +19,8 @@
         // setTimeout(() => {
         //     isSidebarOpen.value = false;
         // }, 2000)
+
+        isSuperAdmin.value = window.isSuperAdmin;
     });
 
     /* STYLES */
@@ -65,7 +69,7 @@
                     <span :class="iconClass">
                         <FontAwesomeIcon :icon="['fas', 'ticket']" />
                     </span>Tickets</a>
-                <a href="/dashboard/users" :class="navLinkClass">
+                <a href="/dashboard/users" :class="navLinkClass" v-if="isSuperAdmin">
                     <span :class="iconClass">
                         <FontAwesomeIcon :icon="['fas', 'user-group']" />
                     </span>Users</a>
