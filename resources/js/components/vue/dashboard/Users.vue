@@ -17,6 +17,10 @@
     const isClientTicketsModalOpen = ref(false);
     const highlightId = ref(null);
 
+    // New reactive references for user logs
+    const userLogs = ref([]);
+    const loadingLogs = ref(false);
+
     // Fetch Users
     const fetchUsers = async () => {
         loading.value = true;
@@ -106,6 +110,18 @@
         }
 
         console.log('Selected user:', selectedUser.value);
+    };
+
+    // New method to open user modal and fetch logs
+    const openUserModal = async (user) => {
+      selectedUser.value = user;
+      loadingLogs.value = true;
+      try {
+        const res = await axios.get(`/users/${user.id}/activity-log`);
+        userLogs.value = res.data;
+      } finally {
+        loadingLogs.value = false;
+      }
     };
 
     // Date format

@@ -172,7 +172,7 @@ const getStatusClass = (status) => {
 
 // Get profile image URL
 const getProfileImage = (imagePath) => {
-    if (!imagePath) return '/images/default-avatar.png';
+    if (!imagePath) return '/storage/profile-images/profile.png';
     if (imagePath.startsWith('http')) return imagePath;
     return `/storage/${imagePath}`;
 };

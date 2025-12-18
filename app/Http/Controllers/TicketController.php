@@ -126,9 +126,10 @@ class TicketController extends Controller
         return response()->json($ticket, 201);
     }
 
-    // Show a single ticket
-    public function show(Ticket $ticket)
+    // Show a single ticket (including soft-deleted)
+    public function show($id)
     {
+        $ticket = Ticket::withTrashed()->findOrFail($id);
         return response()->json($ticket);
     }
 

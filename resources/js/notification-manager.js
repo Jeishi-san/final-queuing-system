@@ -5,6 +5,7 @@ class NotificationManager {
         this.pollingInterval = null;
         this.isDropdownOpen = false;
         this.isLoading = false;
+        this.apiBase = '/api/notifications';
         this.init();
     }
 
@@ -129,26 +130,43 @@ class NotificationManager {
                 console.log('✅ Notifications loaded successfully');
             } else {
                 throw new Error(data.message || 'API returned unsuccessful response');
-            }
+                const [listRes, countRes] = await Promise.all([
+                    fetch(`${this.apiBase}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        },
+                        credentials: 'same-origin'
+                    }),
+                    fetch(`${this.apiBase}/unread-count`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        },
+                        credentials: 'same-origin'
+                    })
+                ]);
         } catch (error) {
             console.error('❌ Error loading notifications:', error);
             this.renderError(error.message);
-        } finally {
-            this.isLoading = false;
-        }
-    }
+                if (!listRes.ok) throw new Error(`HTTP ${listRes.status}: ${listRes.statusText}`);
+                if (!countRes.ok) throw new Error(`HTTP ${countRes.status}: ${countRes.statusText}`);
 
-    getCsrfToken() {
-        // Try multiple ways to get CSRF token
-        const metaTag = document.querySelector('meta[name="csrf-token"]');
-        if (metaTag) return metaTag.content;
-        
-        const tokenInput = document.querySelector('input[name="_token"]');
-        if (tokenInput) return tokenInput.value;
-        
-        console.warn('⚠️ CSRF token not found');
-        return '';
-    }
+                const listData = await listRes.json();
+                const countData = await countRes.json();
+
+                const notifications = Array.isArray(listData?.data) ? listData.data
+                    : Array.isArray(listData) ? listData
+                    : Array.isArray(listData?.notifications) ? listData.notifications
+                    : [];
+
+                const unreadCount = typeof countData?.count === 'number' ? countData.count : 0;
+
+                this.updateNotificationCount(unreadCount);
+                this.renderNotifications(notifications);
+                console.log('✅ Notifications loaded successfully');
 
     showLoadingState() {
         const container = document.getElementById('notificationList');
@@ -321,7 +339,7 @@ class NotificationManager {
         
         try {
             const csrfToken = this.getCsrfToken();
-            const response = await fetch('/notifications/mark-as-read', {
+            const response = await fetch(`${this.apiBase}/mark-all-read`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
@@ -355,7 +373,7 @@ async markAsReadSingle(notificationId) {
     
     try {
         const csrfToken = this.getCsrfToken();
-        const response = await fetch(`/notifications/${notificationId}/mark-as-read`, {
+            const response = await fetch(`${this.apiBase}/${notificationId}/read`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

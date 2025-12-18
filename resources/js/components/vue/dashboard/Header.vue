@@ -67,7 +67,7 @@
     // --- User Logic ---
     const user = ref({});
     const getProfileImage = (path) => {
-        if (!path) return null;
+        if (!path) return '/assets/img/profile.png';
         if (path.startsWith('http') || path.startsWith('data:')) return path;
         return `/storage/${path}`;
     };

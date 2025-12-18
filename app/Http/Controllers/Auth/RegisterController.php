@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class RegisterController extends Controller
 {
@@ -48,6 +50,24 @@ class RegisterController extends Controller
         }
 
         try {
+            // Ensure default profile image exists in the public storage disk
+            $defaultStoragePath = 'profile-images/profile.png';
+            $defaultSourcePath = resource_path('assets/img/profile.png');
+
+            try {
+                if (File::exists($defaultSourcePath) && !Storage::disk('public')->exists($defaultStoragePath)) {
+                    Storage::disk('public')->put($defaultStoragePath, File::get($defaultSourcePath));
+                    Log::info('Default profile image copied to storage', ['to' => $defaultStoragePath]);
+                }
+            } catch (\Throwable $imgEx) {
+                // Non-fatal: log but continue registration
+                Log::warning('Unable to prepare default profile image', [
+                    'error' => $imgEx->getMessage(),
+                    'source' => $defaultSourcePath,
+                    'target' => $defaultStoragePath,
+                ]);
+            }
+
             // Determine department: Agents = null, IT Staff = Input or Default
             $department = null;
             if ($request->role === 'it_staff') {
@@ -69,6 +89,8 @@ class RegisterController extends Controller
                 'contact_number' => $request->contact_number,
                 'account_status' => 'active',
                 'email_verified_at' => now(), // Assume verification upon registration for internal users
+                // Set default profile image for newly registered Agent/IT Staff
+                'image' => $defaultStoragePath,
             ]);
 
             // Determine redirect URL based on role

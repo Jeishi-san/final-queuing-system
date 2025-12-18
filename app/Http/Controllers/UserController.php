@@ -320,7 +320,7 @@ class UserController extends Controller
             Log::error('Error calculating resolution time: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Failed to calculate resolution time',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage() 
             ], 500);
         }
     }
