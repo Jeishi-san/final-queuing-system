@@ -1,8 +1,16 @@
 <script setup>
     import { ref, onMounted, watch, nextTick } from "vue";
-    import { Chart, PieController, ArcElement, Tooltip, Legend } from "chart.js";
+    import {
+        Chart,
+        PieController, ArcElement,
+        BarController, BarElement, CategoryScale, LinearScale,
+        Tooltip, Legend
+    } from "chart.js";
 
-    Chart.register(PieController, ArcElement, Tooltip, Legend);
+    Chart.register(
+        PieController, ArcElement,
+        BarController, BarElement, CategoryScale, LinearScale,
+        Tooltip, Legend);
 
     /* =======================
     REACTIVE STATE
@@ -17,12 +25,14 @@
     const ticketsByClientPieChart = ref(null);
     const ticketsByStaffPieChart = ref(null);
     const ticketsByClientPieChart_admin = ref(null);
+    const ticketsByPeriodChart = ref(null);
     const searchEmail = ref('');
     const clients = ref([]);
     const clientTicketCount = ref(0);
     const showAddTicket = ref(false);
     const isSuperAdmin = ref(false);
     const isListSwitched = ref(false);
+    let ticketsByDate = ref([]);
 
     const form = ref({
         holder_name: "",
@@ -103,7 +113,14 @@
         try {
             const res = await axios.get("/tickets");
             ticketList.value = res.data;
+
+            ticketsByDate = ticketList.value.map(t => ({
+                id: t.id,
+                date: new Date(t.created_at).toISOString().split('T')[0] // YYYY-MM-DD
+            }));
+
             console.log("Fetched tickets items:", ticketList.value);
+            console.log("Fetched tickets items by date:", ticketsByDate);
         } catch (error) {
             console.error("Error fetching tickets items:", error);
         } finally {
@@ -189,9 +206,6 @@
                     ticketsByClientPieChart.value.update();
                 }
             }
-
-
-
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
         }
@@ -459,8 +473,71 @@
                 },
             });
         }
-    });
 
+        //Tickets by Period
+
+        const canvas = document.getElementById('ticketsByPeriodChart');
+        if (!canvas) {
+            console.error('ticketsByPeriodChart canvas not found!');
+            return;
+        }
+
+        const ctx6 = canvas.getContext('2d');
+
+        const ticketsArray = ticketsByDate.value || [];
+
+        // Count tickets per date
+        const counts = {};
+        ticketsArray.forEach(t => {
+            counts[t.date] = (counts[t.date] || 0) + 1;
+        });
+
+        const labels = Object.keys(counts); // periods
+        const ticketCounts = Object.values(counts); // tickets per period
+
+        // Destroy old chart if exists
+        if (ticketsByPeriodChart.value) {
+            ticketsByPeriodChart.value.destroy();
+        }
+
+        if (ctx6) {
+                ticketsByPeriodChart.value = new Chart(ctx6, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tickets',
+                        data: ticketCounts,
+                        backgroundColor: 'rgba(2, 156, 218, 0.6)',
+                        borderColor: 'rgba(2, 156, 218, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Tickets'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Period'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
 </script>
 
 <template>
@@ -496,7 +573,7 @@
                 <div class="w-1/3 bg-white rounded-3xl shadow p-5">
                     <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by {{ isSuperAdmin ? 'Period' : 'Client' }}</h2>
                     <div v-if="isSuperAdmin" class="w-[85%] h-[85%] mx-auto">
-                        <canvas id="ticketsByPeriodChart"></canvas>
+                        <canvas id="ticketsByPeriodChart" width="400" height="200"></canvas>
                     </div>
                     <div v-if="!isSuperAdmin" class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsByClientPieChart"></canvas>
