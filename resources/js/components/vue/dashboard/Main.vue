@@ -24,6 +24,7 @@
     const showAddTicket = ref(false);
     const isSuperAdmin = ref(false);
     const isListSwitched = ref(false);
+    const ticketSummary = ref([]);
 
     const periodType = ref("daily");
     const ticketsByPeriodTable = ref([]);
@@ -66,7 +67,7 @@
     };
 
     //init
-    searchEmail.value = 'john@concentrix.com';
+    searchEmail.value = '';
     form.value.holder_email = searchEmail.value;
 
     // FIX: These were used but never declared (runtime error)
@@ -115,12 +116,18 @@
         }
     };
 
+    const fetchTicketSummary = async () => {
+        const response = await axios.get("/tickets/summary", {params: { clientEmail: searchEmail.value }});
+        ticketSummary.value = response.data;
+        console.log("Ticket Summary", ticketSummary.value);
+    }
+
     const fetchforPieCharts = async () => {
         try {
             const response = await axios.get("/tickets/summary", {params: { clientEmail: searchEmail.value }});
             const data = response.data;
 
-            // Ticket distribution
+            // Ticket distribution by Status
             const statusCounts = data.status_counts || {};
             const labels = Object.keys(statusCounts);
             let counts = Object.values(statusCounts);
@@ -145,77 +152,81 @@
                 const staffLabels = staffArray.map(s => s.name);
                 let staffCounts = staffArray.map(s => s.count);
 
-                // Check if all values are 0 or array is empty
-                const staffHasData = staffCounts.some(v => v > 0);
-                if (!staffHasData) {
-                    staffLabels.length = 0;
-                    staffCounts = [1];
-                    staffLabels.push("No Tickets");
-                }
+                    // Check if all values are 0 or array is empty
+                    const staffHasData = staffCounts.some(v => v > 0);
+                    if (!staffHasData) {
+                        staffLabels.length = 0;
+                        staffCounts = [1];
+                        staffLabels.push("No Tickets");
+                    }
 
-                if (ticketsByStaffPieChart.value) {
-                    ticketsByStaffPieChart.value.data.labels = staffLabels;
-                    ticketsByStaffPieChart.value.data.datasets[0].data = staffCounts;
-                    ticketsByStaffPieChart.value.update();
-                }
+                    if (ticketsByStaffPieChart.value) {
+                        ticketsByStaffPieChart.value.data.labels = staffLabels;
+                        ticketsByStaffPieChart.value.data.datasets[0].data = staffCounts;
+                        ticketsByStaffPieChart.value.update();
+                    }
 
                 // Tickets by client chart, Super Admin View
                 const clientCount = data.client || {};
                 const clientLabels = Object.keys(clientCount);
                 let clientCounts = Object.values(clientCount);
 
-                // Check if all values are 0 or array is empty
-                const hasData = clientCounts.some(v => v > 0);
-                if (!hasData) {
-                    clientLabels.length = 0;
-                    clientCounts = [1];
-                    clientLabels.push("No Tickets");
-                }
+                    // Check if all values are 0 or array is empty
+                    const hasData = clientCounts.some(v => v > 0);
+                    if (!hasData) {
+                        clientLabels.length = 0;
+                        clientCounts = [1];
+                        clientLabels.push("No Tickets");
+                    }
 
-                if (ticketsByClientPieChart_admin.value) {
-                    ticketsByClientPieChart_admin.value.data.labels = clientLabels;
-                    ticketsByClientPieChart_admin.value.data.datasets[0].data = clientCounts;
-                    ticketsByClientPieChart_admin.value.update();
-                }
+                    if (ticketsByClientPieChart_admin.value) {
+                        ticketsByClientPieChart_admin.value.data.labels = clientLabels;
+                        ticketsByClientPieChart_admin.value.data.datasets[0].data = clientCounts;
+                        ticketsByClientPieChart_admin.value.update();
+                    }
 
+
+                    console.log("Client Counts", data);
             } else {
                 // Tickets by me chart
                 const mineCount = data.mine_counts || {};
                 const mineLabels = Object.keys(mineCount);
                 let mineCounts = Object.values(mineCount);
 
-                // Check if all values are 0 or array is empty
-                const mineHasData = mineCounts.some(v => v > 0);
-                if (!mineHasData) {
-                    mineLabels.length = 0;
-                    mineCounts = [1];
-                    mineLabels.push("No Tickets");
-                }
+                    // Check if all values are 0 or array is empty
+                    const mineHasData = mineCounts.some(v => v > 0);
+                    if (!mineHasData) {
+                        mineLabels.length = 0;
+                        mineCounts = [1];
+                        mineLabels.push("No Tickets");
+                    }
 
-                if (ticketsByMePieChart.value) {
-                    ticketsByMePieChart.value.data.labels = mineLabels;
-                    ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
-                    ticketsByMePieChart.value.update();
-                }
+                    if (ticketsByMePieChart.value) {
+                        ticketsByMePieChart.value.data.labels = mineLabels;
+                        ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
+                        ticketsByMePieChart.value.update();
+                    }
 
                 // Tickets by client chart
                 const clientCount = data.client || {};
                 const clientLabels = Object.keys(clientCount);
                 let clientCounts = Object.values(clientCount);
 
-                // Check if all values are 0 or array is empty
-                const hasData = clientCounts.some(v => v > 0);
-                if (!hasData) {
-                    clientLabels.length = 0;
-                    clientCounts = [1];
-                    clientLabels.push("No Tickets");
-                }
+                    // Check if all values are 0 or array is empty
+                    const hasData = clientCounts.some(v => v > 0);
+                    if (!hasData) {
+                        clientLabels.length = 0;
+                        clientCounts = [1];
+                        clientLabels.push("No Tickets");
+                    }
 
-                if (ticketsByClientPieChart.value) {
-                    ticketsByClientPieChart.value.data.labels = clientLabels;
-                    ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
-                    ticketsByClientPieChart.value.update();
-                }
+                    if (ticketsByClientPieChart.value) {
+                        ticketsByClientPieChart.value.data.labels = clientLabels;
+                        ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
+                        ticketsByClientPieChart.value.update();
+                    }
+
+                console.log("Client Counts", data);
             }
 
         } catch (error) {
@@ -227,6 +238,10 @@
         try {
             const response = await axios.get("/users");
             clients.value = response.data.filter(user => user.role === 'agent');
+
+            if (clients.value.length > 0) {
+                searchEmail.value = clients.value[0].email;
+            }
         } catch (error) {
             console.error("Error fetching clients:", error);
         }
@@ -279,12 +294,13 @@
     ======================= */
     onMounted(() => {
         fetchUserRole();
-        fetchQueuedTickets();
-        fetchTickets();
-        fetchforPieCharts();
         fetchClients();
+        fetchTickets();
+        fetchQueuedTickets();
         fetchTicketsByClient();
+        //fetchforPieCharts();
 
+        fetchTicketSummary();
         // PIE charts code (null-safe to prevent crashes)
         const ctx = document
             .getElementById("ticketsPieChart")
@@ -520,7 +536,8 @@
 
                 <!-- Right Side: Pie Chart ticket dist by client-->
                 <div v-if="!isSuperAdmin" class="w-1/3 bg-white rounded-3xl shadow p-5">
-                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by Client</h2>
+                    <h2 class="text-lg font-semibold mb-2 text-[#003D5B]">Tickets by Client
+                        <span class="text-sm font-light ml-5">{{ searchEmail }}</span></h2>
                     <div class="w-[85%] h-[85%] mx-auto">
                         <canvas id="ticketsByClientPieChart"></canvas>
                     </div>
@@ -595,9 +612,15 @@
                                     <td class="py-2 px-3">{{ formatDate(ticket?.updated_at) }}</td>
                                 </tr>
 
-                                <tr v-if="!ticketList || ticketList.length === 0">
+                                <tr v-if="(!ticketList || ticketList.length === 0) && clients">
                                     <td colspan="3" class="text-center py-4 text-gray-400">
                                         Empty ticket list.
+                                    </td>
+                                </tr>
+
+                                <tr v-if="!clients || clients.length === 0">
+                                    <td colspan="3" class="text-center py-4 text-gray-400">
+                                        No registered account.
                                     </td>
                                 </tr>
                             </tbody>
@@ -837,7 +860,7 @@
                                 <div>{{ queue.queue_number }}</div>
                                 <div>{{ queue.ticket?.ticket_number }}</div>
                             </div>
-                            <div v-if="!ticketList || ticketList.length === 0">
+                            <div v-if="!queueList || queueList.length === 0">
                                 <div colspan="3" class="text-center py-4 text-gray-400">
                                     No tickets queued.
                                 </div>
@@ -938,7 +961,7 @@
                                 <div>{{ ticket?.ticket_number }}</div>
                                 <div>{{ ticket?.status }}</div>
                             </div>
-                            <div v-if="!ticketList || ticketList.length === 0">
+                            <div v-if="!ticketListByClient || ticketListByClient.length === 0">
                                 <div colspan="3" class="text-center py-4 text-gray-400">
                                     Empty ticket list.
                                 </div>

@@ -29,7 +29,7 @@
 
             setTimeout(() => {
                 emit('submitted');
-            }, 500);
+            }, 200);
 
         } catch (error) {
             if (error.response) {
