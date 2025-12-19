@@ -19,7 +19,7 @@
         {{-- 🖼 Profile Picture --}}
         <div class="flex items-center gap-6">
             <div class="relative">
-                <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : asset('images/default-avatar.png') }}"
+                 <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : Vite::asset('resources/assets/img/profile.png') }}"
                      alt="Profile Picture"
                      class="w-28 h-28 rounded-full object-cover border-4 border-gray-300 dark:border-gray-600 shadow-sm">
                 <div class="absolute bottom-1 right-1 bg-blue-600 text-white text-xs px-2 py-1 rounded-md shadow-sm">

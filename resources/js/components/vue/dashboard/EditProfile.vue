@@ -22,7 +22,7 @@
           <!-- 🖼 Profile Picture -->
           <div class="flex items-center gap-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <div class="relative cursor-pointer" @click="triggerFileInput">
-              <img :src="profileImagePreview || getProfileImage(user.image) || '/images/default-avatar.png'"
+                  <img :src="profileImagePreview || getProfileImage(user.image) || defaultAvatar"
                    alt="Profile Picture"
                    class="w-20 h-20 rounded-full object-cover border-4 border-gray-300 dark:border-gray-600 shadow-sm transition-all duration-300 hover:border-blue-500">
               <div class="absolute bottom-0 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded-md shadow-sm">
@@ -153,6 +153,8 @@ const errorMessage = ref('')
 const fileInput = ref(null)
 const selectedFile = ref(null)
 const profileImagePreview = ref(null)
+// Default avatar resolved via Vite from resources/assets
+const defaultAvatar = new URL('../../../../assets/img/profile.png', import.meta.url).href
 
 // Get profile image URL
 const getProfileImage = (imagePath) => {

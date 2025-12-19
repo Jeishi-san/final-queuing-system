@@ -17,7 +17,7 @@
 
         <div class="flex flex-col sm:flex-row items-start gap-6">
             {{-- 🖼 Profile Picture --}}
-            <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : asset('images/default-avatar.png') }}"
+              <img src="{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : Vite::asset('resources/assets/img/profile.png') }}"
                  alt="Profile Picture"
                  class="w-28 h-28 rounded-full object-cover border-4 border-gray-300 dark:border-gray-700 shadow-sm">
 
