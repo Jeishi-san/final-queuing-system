@@ -21,9 +21,9 @@
 
     const showMenu = ref(false);
     const showUserQueueList = ref(false);
-    
+
     // Reactive array to store inProgress data
-    const inProgress = ref([]); 
+    const inProgress = ref([]);
 
     // keep timer ids to clear if component unmounts
     let showTimer = null;
@@ -200,7 +200,7 @@
                 <NextInLine/> </div>
         </div>
 
-        <aside> 
+        <aside>
             <transition
                 enter-active-class="transition-opacity duration-500"
                 leave-active-class="transition-opacity duration-500"

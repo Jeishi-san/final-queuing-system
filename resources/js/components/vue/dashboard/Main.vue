@@ -27,7 +27,6 @@
     const showAddTicket = ref(false);
     const isSuperAdmin = ref(false);
     const isListSwitched = ref(false);
-    const ticketSummary = ref([]);
 
     const periodType = ref("daily");
     const ticketsByPeriodTable = ref([]);
@@ -119,29 +118,15 @@
         }
     };
 
-    const fetchTicketSummary = async () => {
-        const response = await axios.get("/tickets/summary", {params: { clientEmail: searchEmail.value }});
-        ticketSummary.value = response.data;
-        console.log("Ticket Summary", ticketSummary.value);
-    }
-
     const fetchforPieCharts = async () => {
         try {
             const response = await axios.get("/tickets/summary", {params: { clientEmail: searchEmail.value }});
             const data = response.data;
 
-            // Ticket distribution by Status
+            // Ticket distribution
             const statusCounts = data.status_counts || {};
             const labels = Object.keys(statusCounts);
-            let counts = Object.values(statusCounts);
-
-            // Check if all values are 0 or array is empty
-            const countHasData = counts.some(v => v > 0);
-            if (!countHasData) {
-                labels.length = 0;
-                counts = [1];
-                labels.push("No Tickets");
-            }
+            const counts = Object.values(statusCounts);
 
             if (ticketsPieChart.value) {
                 ticketsPieChart.value.data.labels = labels;
@@ -153,83 +138,63 @@
                 // Tickets by staff chart
                 const staffArray = data.staff || [];
                 const staffLabels = staffArray.map(s => s.name);
-                let staffCounts = staffArray.map(s => s.count);
+                const staffCounts = staffArray.map(s => s.count);
 
-                    // Check if all values are 0 or array is empty
-                    const staffHasData = staffCounts.some(v => v > 0);
-                    if (!staffHasData) {
-                        staffLabels.length = 0;
-                        staffCounts = [1];
-                        staffLabels.push("No Tickets");
-                    }
-
-                    if (ticketsByStaffPieChart.value) {
-                        ticketsByStaffPieChart.value.data.labels = staffLabels;
-                        ticketsByStaffPieChart.value.data.datasets[0].data = staffCounts;
-                        ticketsByStaffPieChart.value.update();
-                    }
+                if (ticketsByStaffPieChart.value) {
+                    ticketsByStaffPieChart.value.data.labels = staffLabels;
+                    ticketsByStaffPieChart.value.data.datasets[0].data = staffCounts;
+                    ticketsByStaffPieChart.value.update();
+                }
 
                 // Tickets by client chart, Super Admin View
                 const clientCount = data.client || {};
                 const clientLabels = Object.keys(clientCount);
                 let clientCounts = Object.values(clientCount);
 
-                    // Check if all values are 0 or array is empty
-                    const hasData = clientCounts.some(v => v > 0);
-                    if (!hasData) {
-                        clientLabels.length = 0;
-                        clientCounts = [1];
-                        clientLabels.push("No Tickets");
-                    }
+                // Check if all values are 0 or array is empty
+                const hasData = clientCounts.some(v => v > 0);
+                if (!hasData) {
+                    clientLabels.length = 0;
+                    clientCounts = [1];
+                    clientLabels.push("No Tickets");
+                }
 
-                    if (ticketsByClientPieChart_admin.value) {
-                        ticketsByClientPieChart_admin.value.data.labels = clientLabels;
-                        ticketsByClientPieChart_admin.value.data.datasets[0].data = clientCounts;
-                        ticketsByClientPieChart_admin.value.update();
-                    }
+                if (ticketsByClientPieChart_admin.value) {
+                    ticketsByClientPieChart_admin.value.data.labels = clientLabels;
+                    ticketsByClientPieChart_admin.value.data.datasets[0].data = clientCounts;
+                    ticketsByClientPieChart_admin.value.update();
+                }
 
-
-                    console.log("Client Counts", data);
             } else {
                 // Tickets by me chart
                 const mineCount = data.mine_counts || {};
                 const mineLabels = Object.keys(mineCount);
-                let mineCounts = Object.values(mineCount);
+                const mineCounts = Object.values(mineCount);
 
-                    // Check if all values are 0 or array is empty
-                    const mineHasData = mineCounts.some(v => v > 0);
-                    if (!mineHasData) {
-                        mineLabels.length = 0;
-                        mineCounts = [1];
-                        mineLabels.push("No Tickets");
-                    }
-
-                    if (ticketsByMePieChart.value) {
-                        ticketsByMePieChart.value.data.labels = mineLabels;
-                        ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
-                        ticketsByMePieChart.value.update();
-                    }
+                if (ticketsByMePieChart.value) {
+                    ticketsByMePieChart.value.data.labels = mineLabels;
+                    ticketsByMePieChart.value.data.datasets[0].data = mineCounts;
+                    ticketsByMePieChart.value.update();
+                }
 
                 // Tickets by client chart
                 const clientCount = data.client || {};
                 const clientLabels = Object.keys(clientCount);
                 let clientCounts = Object.values(clientCount);
 
-                    // Check if all values are 0 or array is empty
-                    const hasData = clientCounts.some(v => v > 0);
-                    if (!hasData) {
-                        clientLabels.length = 0;
-                        clientCounts = [1];
-                        clientLabels.push("No Tickets");
-                    }
+                // Check if all values are 0 or array is empty
+                const hasData = clientCounts.some(v => v > 0);
+                if (!hasData) {
+                    clientLabels.length = 0;
+                    clientCounts = [1];
+                    clientLabels.push("No Tickets");
+                }
 
-                    if (ticketsByClientPieChart.value) {
-                        ticketsByClientPieChart.value.data.labels = clientLabels;
-                        ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
-                        ticketsByClientPieChart.value.update();
-                    }
-
-                console.log("Client Counts", data);
+                if (ticketsByClientPieChart.value) {
+                    ticketsByClientPieChart.value.data.labels = clientLabels;
+                    ticketsByClientPieChart.value.data.datasets[0].data = clientCounts;
+                    ticketsByClientPieChart.value.update();
+                }
             }
 
         } catch (error) {
@@ -297,13 +262,12 @@
     ======================= */
     onMounted(() => {
         fetchUserRole();
-        fetchClients();
-        fetchTickets();
         fetchQueuedTickets();
+        fetchTickets();
+        fetchforPieCharts();
+        fetchClients();
         fetchTicketsByClient();
-        //fetchforPieCharts();
 
-        fetchTicketSummary();
         // PIE charts code (null-safe to prevent crashes)
         const ctx = document
             .getElementById("ticketsPieChart")

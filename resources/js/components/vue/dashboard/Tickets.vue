@@ -243,28 +243,21 @@ const openModal = (ticket) => {
   selectedTicket.value = ticket;
 };
 
-// Save from modal
-// const saveTicket = async (ticket) => {
-//   try {
-//     await axios.put(`/tickets/${ticket.id}`, ticket);
-//     const idx = ticketList.value.findIndex(t => t.id === ticket.id);
-//     if (idx !== -1) ticketList.value[idx] = { ...ticket };
-//     selectedTicket.value = null;
-//   } catch (error) {
-//     console.error('Failed to save ticket:', error);
-//   }
-// };
-
-onMounted(fetchTickets);
-
 onMounted(async () => {
   // read highlight param
   const params = new URLSearchParams(window.location.search);
   highlightId.value = params.get('highlight');
 
   // fetch tickets
-  const res = await axios.get('/tickets');
-  ticketList.value = res.data;
+  loading.value = true;
+  try {
+    const res = await axios.get('/tickets');
+    ticketList.value = res.data;
+  } catch (error) {
+    console.error('Error fetching tickets items:',error);
+  } finally {
+    loading.value = false;
+  }
 
   // wait for DOM to update
   await nextTick();
