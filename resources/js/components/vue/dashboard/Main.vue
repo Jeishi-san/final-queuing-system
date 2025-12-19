@@ -126,7 +126,15 @@
             // Ticket distribution
             const statusCounts = data.status_counts || {};
             const labels = Object.keys(statusCounts);
-            const counts = Object.values(statusCounts);
+            let counts = Object.values(statusCounts);
+
+            // Check if all values are 0 or array is empty
+            const countHasData = counts.some(v => v > 0);
+            if (!countHasData) {
+                labels.length = 0;
+                counts = [1];
+                labels.push("No Tickets");
+            }
 
             if (ticketsPieChart.value) {
                 ticketsPieChart.value.data.labels = labels;
@@ -138,7 +146,15 @@
                 // Tickets by staff chart
                 const staffArray = data.staff || [];
                 const staffLabels = staffArray.map(s => s.name);
-                const staffCounts = staffArray.map(s => s.count);
+                let staffCounts = staffArray.map(s => s.count);
+
+                // Check if all values are 0 or array is empty
+                const staffHasData = staffCounts.some(v => v > 0);
+                if (!staffHasData) {
+                    staffLabels.length = 0;
+                    staffCounts = [1];
+                    staffLabels.push("No Tickets");
+                }
 
                 if (ticketsByStaffPieChart.value) {
                     ticketsByStaffPieChart.value.data.labels = staffLabels;
@@ -169,7 +185,15 @@
                 // Tickets by me chart
                 const mineCount = data.mine_counts || {};
                 const mineLabels = Object.keys(mineCount);
-                const mineCounts = Object.values(mineCount);
+                let mineCounts = Object.values(mineCount);
+
+                // Check if all values are 0 or array is empty
+                const mineHasData = mineCounts.some(v => v > 0);
+                if (!mineHasData) {
+                    mineLabels.length = 0;
+                    mineCounts = [1];
+                    mineLabels.push("No Tickets");
+                }
 
                 if (ticketsByMePieChart.value) {
                     ticketsByMePieChart.value.data.labels = mineLabels;
@@ -196,8 +220,6 @@
                     ticketsByClientPieChart.value.update();
                 }
             }
-
-
 
         } catch (error) {
             console.error("Failed to fetch tickets:", error);
@@ -788,6 +810,11 @@
                                 <div>{{ ticket?.status }}</div>
                                 <div>{{ formatDate(ticket?.updated_at) }}</div>
                             </div>
+                            <div v-if="!ticketList || ticketList.length === 0">
+                                <div colspan="3" class="text-center py-4 text-gray-400">
+                                    Empty ticket list.
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -817,6 +844,11 @@
                             >
                                 <div>{{ queue.queue_number }}</div>
                                 <div>{{ queue.ticket?.ticket_number }}</div>
+                            </div>
+                            <div v-if="!ticketList || ticketList.length === 0">
+                                <div colspan="3" class="text-center py-4 text-gray-400">
+                                    No tickets queued.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -913,6 +945,11 @@
                             >
                                 <div>{{ ticket?.ticket_number }}</div>
                                 <div>{{ ticket?.status }}</div>
+                            </div>
+                            <div v-if="!ticketList || ticketList.length === 0">
+                                <div colspan="3" class="text-center py-4 text-gray-400">
+                                    Empty ticket list.
+                                </div>
                             </div>
                         </div>
                     </div>
