@@ -66,8 +66,10 @@
 
     // --- User Logic ---
     const user = ref({});
+    // Use Vite to resolve default avatar from resources/assets
+    const defaultAvatar = new URL('../../../../assets/img/profile.png', import.meta.url).href;
     const getProfileImage = (path) => {
-        if (!path) return '/assets/img/profile.png';
+        if (!path) return defaultAvatar;
         if (path.startsWith('http') || path.startsWith('data:')) return path;
         return `/storage/${path}`;
     };
