@@ -13,6 +13,7 @@ use App\Models\ActivityLog;
 use App\Models\User;
 use App\Notifications\TicketUpdatedNotification;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
 {
@@ -183,13 +184,18 @@ class TicketController extends Controller
     public function updateStatus(Request $request, $id)
     {
         try {
+            // Ensure user is authenticated for web route updates
+            $currentUser = auth('web')->user();
+            if (!$currentUser) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+
             $validated = $request->validate([
                 'status' => 'required|string',
             ]);
 
             $ticket = Ticket::findOrFail($id);
             $oldStatus = $ticket->status;
-            $currentUser = auth('web')->user();
 
             $ticketLog_message = "";
 
@@ -198,7 +204,7 @@ class TicketController extends Controller
 
                 if ($validated['status'] === 'queued') {
                     $this->addTicketToQueue($ticket);
-                    $ticket->assigned_to = auth('web')->id();
+                    $ticket->assigned_to = $currentUser->id;
                     $ticketLog_message = "Ticket validated and added to queue";
                 } elseif ($validated['status'] === 'in progress') {
                     $this->updateAssignedUser($ticket);
@@ -288,14 +294,15 @@ class TicketController extends Controller
             return response()->json(['message' => 'Queue already exists']);
         }
 
-        // Generate queue number safely without relying on external controller
-        $latestQueue = Queue::max('queue_number');
-        $nextQueueNum = $latestQueue ? $latestQueue + 1 : 1;
+        // Generate queue number using numeric MAX to avoid string lexicographic issues
+        // Example: MAX('10','9') as strings returns '9'; casting fixes this.
+        $latestQueue = DB::table('queues')->max(DB::raw('CAST(queue_number AS UNSIGNED)'));
+        $nextQueueNum = ($latestQueue ?? 0) + 1;
 
         $queue = Queue::create([
             'ticket_id'    => $ticket->id,
             'assigned_to'  => auth('web')->id(),
-            'queue_number' => $nextQueueNum,
+            'queue_number' => (string) $nextQueueNum,
         ]);
 
         return $queue;
@@ -303,15 +310,20 @@ class TicketController extends Controller
 
     private function updateAssignedUser(Ticket $ticket)
     {
+        $userId = auth('web')->id();
+        if (!$userId) {
+            return; // avoid null FK writes
+        }
+
         $queue = Queue::where('ticket_id', $ticket->id)->first();
         if ($queue) {
-            $queue->assigned_to = auth('web')->id();
+            $queue->assigned_to = $userId;
             $queue->save();
         }
 
         $saveTicket = Ticket::where('id', $ticket->id)->first();
         if ($saveTicket) {
-            $saveTicket->assigned_to = auth('web')->id();
+            $saveTicket->assigned_to = $userId;
             $saveTicket->save();
         }
     }

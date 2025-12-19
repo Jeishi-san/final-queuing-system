@@ -114,11 +114,6 @@
 
         let rows = Array.from(map.values()).reverse();
 
-        if (selectedPeriod.value === "daily") rows = rows.slice(0, 10);
-        if (selectedPeriod.value === "weekly") rows = rows.slice(0, 10);
-        if (selectedPeriod.value === "monthly") rows = rows.slice(0, 10);
-        if (selectedPeriod.value === "yearly") rows = rows.slice(0, 5);
-
         if (selectedPeriod.value === "custom") {
             const total = rows.reduce((sum, r) => sum + r.count, 0);
             return [{ label: "Selected Range", count: total }];

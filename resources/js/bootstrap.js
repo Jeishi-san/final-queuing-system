@@ -7,6 +7,17 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Allow cookies/session to be sent
 window.axios.defaults.withCredentials = true;
 
+// CSRF token for web routes (meta tag provided by Blade)
+try {
+    const tokenEl = document.querySelector('meta[name="csrf-token"]');
+    const token = tokenEl ? tokenEl.getAttribute('content') : null;
+    if (token) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
+    }
+} catch (e) {
+    console.warn('CSRF token meta not found');
+}
+
 // --- Global Super Admin check ---
 window.isSuperAdmin = false;
 

@@ -4,6 +4,9 @@
     import TicketsByPeriod from './TicketsByPeriod.vue';
 
     Chart.register(PieController, ArcElement, Tooltip, Legend);
+    // Defensive default to avoid layout.padding undefined errors
+    Chart.defaults.layout = Chart.defaults.layout || {};
+    Chart.defaults.layout.padding = 0;
 
     /* =======================
     REACTIVE STATE
@@ -292,6 +295,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: 0 },
                     plugins: {
                         legend: {
                             position: "right",
@@ -330,6 +334,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: 0 },
                     plugins: {
                         legend: {
                             position: "right",
@@ -368,6 +373,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: 0 },
                     plugins: {
                         legend: {
                             position: "right",
@@ -420,6 +426,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: 0 },
                     plugins: { legend: { position: "right" } },
                 },
             });
@@ -455,6 +462,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: 0 },
                     plugins: {
                         legend: {
                             position: "right",

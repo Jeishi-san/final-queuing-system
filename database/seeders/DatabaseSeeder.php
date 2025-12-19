@@ -29,7 +29,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Super Admin',
                 'email' => 'super.admin@concentrix.com',
                 'password' => Hash::make('password'),
-                'image' => 'super_admin.jpg',
+                // Use default avatar by leaving image null
+                'image' => null,
                 'employee_id' => 'SUPA001',
                 'role' => 'super_admin', // Use the new role key
                 'department' => 'Management',
