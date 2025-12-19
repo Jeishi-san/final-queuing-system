@@ -70,6 +70,8 @@
     const defaultAvatar = new URL('../../../../assets/img/profile.png', import.meta.url).href;
     const getProfileImage = (path) => {
         if (!path) return defaultAvatar;
+        const filename = typeof path === 'string' ? path.split('/').pop() : '';
+        if (filename === 'super_admin.jpg') return defaultAvatar;
         if (path.startsWith('http') || path.startsWith('data:')) return path;
         return `/storage/${path}`;
     };

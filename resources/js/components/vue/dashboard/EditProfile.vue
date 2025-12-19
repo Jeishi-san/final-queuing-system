@@ -158,9 +158,11 @@ const defaultAvatar = new URL('../../../../assets/img/profile.png', import.meta.
 
 // Get profile image URL
 const getProfileImage = (imagePath) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `/storage/${imagePath}`;
+  if (!imagePath) return null;
+  const filename = typeof imagePath === 'string' ? imagePath.split('/').pop() : '';
+  if (filename === 'super_admin.jpg') return defaultAvatar;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `/storage/${imagePath}`;
 };
 
 // Fetch user data
