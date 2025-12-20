@@ -590,7 +590,7 @@
                                     </td>
                                 </tr>
 
-                                <tr v-if="!clients || clients.length === 0">
+                                <tr v-else-if="!clients || clients.length === 0">
                                     <td colspan="3" class="text-center py-4 text-gray-400">
                                         No registered account.
                                     </td>
